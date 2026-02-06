@@ -65,34 +65,65 @@
       <table class="table">
         <thead>
           <tr>
-            <th>Tarih / Saat</th>
+            <th>Giris</th>
+            <th>Cikis</th>
             <th>Proje</th>
             <th>Tur</th>
-            <th>TC Kimlik</th>
             <th>Ad Soyad</th>
             <th>Telefon</th>
             <th>Ziyaret Edilen</th>
-            <th>Not</th>
-            <th>IP</th>
-            <th>Kart</th>
+            <th>Durum</th>
+            <th>Islem</th>
           </tr>
         </thead>
         <tbody>
           <% if (!entries.length) { %>
-            <tr><td colspan="10" class="small" style="text-align:center;padding:32px;">Kayit bulunamadi.</td></tr>
+            <tr><td colspan="9" class="small" style="text-align:center;padding:32px;">Kayit bulunamadi.</td></tr>
           <% } %>
+          <%
+            function calcDuration(entry, exit) {
+              if (!entry || !exit) return '';
+              var ms = new Date(exit) - new Date(entry);
+              if (ms < 0) return '';
+              var mins = Math.floor(ms / 60000);
+              if (mins < 60) return mins + ' dk';
+              var h = Math.floor(mins / 60);
+              var m = mins % 60;
+              return h + ' sa ' + m + ' dk';
+            }
+          %>
           <% entries.forEach(function(e){ %>
             <tr>
-              <td><%= e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '' %></td>
+              <td><span class="small"><%= e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '' %></span></td>
+              <td>
+                <% if (e.exit_at) { %>
+                  <span class="small"><%= new Date(e.exit_at).toLocaleString('tr-TR') %></span>
+                  <br/><span class="small" style="color:var(--text-muted)"><%= calcDuration(e.created_at, e.exit_at) %></span>
+                <% } else { %>
+                  <span class="badge badge-success">Icerde</span>
+                <% } %>
+              </td>
               <td><span class="badge badge-primary"><%= e.project_name %></span></td>
               <td><span class="badge <%= e.entry_type==='Ziyaretçi'?'badge-success':e.entry_type==='Tedarikçi'?'badge-warning':'badge-default' %>"><%= e.entry_type %></span></td>
-              <td><%= e.tc_kimlik_no %></td>
               <td><strong><%= e.full_name %></strong></td>
               <td><%= e.phone %></td>
               <td><%= e.visited_person %></td>
-              <td><%= e.note || '-' %></td>
-              <td><span class="small"><%= e.ip_address || '-' %></span></td>
-              <td><a class="btn btn-sm" href="/admin/entries/<%= e.id %>/print" target="_blank" title="Yazdir"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></a></td>
+              <td>
+                <% if (e.exit_at) { %>
+                  <span class="badge badge-default">Cikti</span>
+                <% } else { %>
+                  <form method="post" action="/admin/entries/<%= e.id %>/exit" style="display:inline;margin:0;">
+                    <input type="hidden" name="redirect_query" value="?project_id=<%= filters.project_id %>&entry_type=<%= encodeURIComponent(filters.entry_type) %>" />
+                    <button class="btn btn-sm danger" type="submit" title="Cikis Kaydet">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                      Cikis
+                    </button>
+                  </form>
+                <% } %>
+              </td>
+              <td>
+                <a class="btn btn-sm" href="/admin/entries/<%= e.id %>/print" target="_blank" title="Yazdir"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></a>
+              </td>
             </tr>
           <% }) %>
         </tbody>
@@ -109,21 +140,35 @@
         <div class="entry-card">
           <div class="entry-card-header">
             <strong><%= e.full_name %></strong>
-            <span class="badge <%= e.entry_type==='Ziyaretçi'?'badge-success':e.entry_type==='Tedarikçi'?'badge-warning':'badge-default' %>"><%= e.entry_type %></span>
+            <% if (e.exit_at) { %>
+              <span class="badge badge-default">Cikti</span>
+            <% } else { %>
+              <span class="badge badge-success">Icerde</span>
+            <% } %>
           </div>
+          <div class="entry-card-row"><span class="ecr-label">Tur</span><span class="ecr-value"><span class="badge <%= e.entry_type==='Ziyaretçi'?'badge-success':e.entry_type==='Tedarikçi'?'badge-warning':'badge-default' %>"><%= e.entry_type %></span></span></div>
           <div class="entry-card-row"><span class="ecr-label">Proje</span><span class="ecr-value"><%= e.project_name %></span></div>
-          <div class="entry-card-row"><span class="ecr-label">TC</span><span class="ecr-value"><%= e.tc_kimlik_no %></span></div>
           <div class="entry-card-row"><span class="ecr-label">Telefon</span><span class="ecr-value"><%= e.phone %></span></div>
           <div class="entry-card-row"><span class="ecr-label">Ziyaret</span><span class="ecr-value"><%= e.visited_person %></span></div>
-          <% if (e.note) { %>
-            <div class="entry-card-row"><span class="ecr-label">Not</span><span class="ecr-value"><%= e.note %></span></div>
+          <div class="entry-card-row"><span class="ecr-label">Giris</span><span class="ecr-value"><%= e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '' %></span></div>
+          <% if (e.exit_at) { %>
+            <div class="entry-card-row"><span class="ecr-label">Cikis</span><span class="ecr-value"><%= new Date(e.exit_at).toLocaleString('tr-TR') %> (<%= calcDuration(e.created_at, e.exit_at) %>)</span></div>
           <% } %>
-          <div class="entry-card-row"><span class="ecr-label">Tarih</span><span class="ecr-value"><%= e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '' %></span></div>
-          <div class="entry-card-row"><span class="ecr-label">IP</span><span class="ecr-value"><%= e.ip_address || '-' %></span></div>
-          <a class="btn btn-sm" href="/admin/entries/<%= e.id %>/print" target="_blank" style="margin-top:8px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            Kart Yazdir
-          </a>
+          <div style="display:flex;gap:6px;margin-top:8px;">
+            <% if (!e.exit_at) { %>
+              <form method="post" action="/admin/entries/<%= e.id %>/exit" style="margin:0;">
+                <input type="hidden" name="redirect_query" value="?project_id=<%= filters.project_id %>&entry_type=<%= encodeURIComponent(filters.entry_type) %>" />
+                <button class="btn btn-sm danger" type="submit">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  Cikis
+                </button>
+              </form>
+            <% } %>
+            <a class="btn btn-sm" href="/admin/entries/<%= e.id %>/print" target="_blank">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Kart
+            </a>
+          </div>
         </div>
       <% }) %>
     </div>

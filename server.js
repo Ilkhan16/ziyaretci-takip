@@ -21,6 +21,7 @@ const {
   createEntry,
   listEntries,
   getEntryById,
+  updateEntryExit,
   getLastEntryByTc,
 } = require('./db');
 
@@ -232,7 +233,65 @@ app.get('/p/:slug/qr.png', async (req, res) => {
 
 // Admin
 app.get('/admin', requireAdmin, (req, res) => {
-  res.redirect('/admin/entries');
+  res.redirect('/admin/dashboard');
+});
+
+// Dashboard
+app.get('/admin/dashboard', requireAdmin, (req, res) => {
+  let allProjects = listProjects({ activeOnly: false });
+  if (req.admin.role === 'customer') {
+    allProjects = allProjects.filter((p) => req.admin.project_ids.includes(p.id));
+  }
+
+  const allEntries = listEntries({ limit: 50000 });
+  let entries = req.admin.role === 'customer'
+    ? allEntries.filter((e) => req.admin.project_ids.includes(e.project_id))
+    : allEntries;
+
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+
+  const todayEntries = entries.filter((e) => e.created_at && e.created_at.slice(0, 10) === todayStr);
+  const activeNow = entries.filter((e) => !e.exit_at && e.created_at && e.created_at.slice(0, 10) === todayStr);
+
+  // Son 7 gun verileri
+  const last7 = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const ds = d.toISOString().slice(0, 10);
+    const dayLabel = d.toLocaleDateString('tr-TR', { weekday: 'short', day: 'numeric', month: 'short' });
+    const count = entries.filter((e) => e.created_at && e.created_at.slice(0, 10) === ds).length;
+    last7.push({ date: ds, label: dayLabel, count });
+  }
+
+  // Tur dagilimi
+  const typeCounts = { Ziyaretci: 0, Tedarikci: 0, Taseron: 0 };
+  entries.forEach((e) => {
+    if (e.entry_type === 'Ziyaret\u00e7i') typeCounts.Ziyaretci++;
+    else if (e.entry_type === 'Tedarik\u00e7i') typeCounts.Tedarikci++;
+    else if (e.entry_type === 'Ta\u015feron') typeCounts.Taseron++;
+  });
+
+  // Son 5 kayit
+  const recentEntries = entries.slice(0, 5);
+  const projectMap = new Map(allProjects.map((p) => [p.id, p]));
+  recentEntries.forEach((e) => {
+    const p = projectMap.get(e.project_id);
+    e.project_name = p ? p.name : '';
+  });
+
+  res.render('admin_dashboard', {
+    title: 'Dashboard',
+    admin: req.admin,
+    totalEntries: entries.length,
+    todayCount: todayEntries.length,
+    activeCount: activeNow.length,
+    projectCount: allProjects.length,
+    last7: JSON.stringify(last7),
+    typeCounts: JSON.stringify(typeCounts),
+    recentEntries,
+  });
 });
 
 app.get('/admin/login', (req, res) => {
@@ -316,6 +375,20 @@ app.get('/admin/entries', requireAdmin, (req, res) => {
       entry_type: entryType || '',
     },
   });
+});
+
+// Entry exit — mark visitor as left
+app.post('/admin/entries/:id/exit', requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const entry = getEntryById(id);
+  if (!entry) return res.status(404).send('Kayit bulunamadi.');
+  if (req.admin.role === 'customer' && !req.admin.project_ids.includes(entry.project_id)) {
+    return res.status(403).send('Yetkiniz yok.');
+  }
+  if (!entry.exit_at) {
+    updateEntryExit(id);
+  }
+  res.redirect('/admin/entries' + (req.body.redirect_query || ''));
 });
 
 // Visitor card print page

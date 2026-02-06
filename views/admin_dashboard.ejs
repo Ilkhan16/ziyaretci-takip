@@ -1,0 +1,152 @@
+<%- include('partials/layout_top', { title }) %>
+<%- include('partials/admin_nav', { admin }) %>
+
+<div class="animate-in">
+  <div class="card-header">
+    <h1 class="h1" style="margin:0;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </h1>
+  </div>
+
+  <div class="stats animate-in animate-delay-1">
+    <div class="stat-card">
+      <div class="stat-value"><%= todayCount %></div>
+      <div class="stat-label">Bugun Giris</div>
+    </div>
+    <div class="stat-card" style="border-left:3px solid var(--success)">
+      <div class="stat-value"><%= activeCount %></div>
+      <div class="stat-label">Su An Icerde</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value"><%= totalEntries %></div>
+      <div class="stat-label">Toplam Kayit</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value"><%= projectCount %></div>
+      <div class="stat-label">Proje Sayisi</div>
+    </div>
+  </div>
+
+  <div class="grid animate-in animate-delay-2" style="margin-top:16px;">
+    <div class="card">
+      <div class="h2">Son 7 Gun</div>
+      <canvas id="chart7" height="200"></canvas>
+    </div>
+    <div class="card">
+      <div class="h2">Giris Turu Dagilimi</div>
+      <canvas id="chartType" height="200"></canvas>
+    </div>
+  </div>
+
+  <div class="card animate-in animate-delay-3" style="margin-top:16px;">
+    <div class="h2">Son Girisler</div>
+    <% if (!recentEntries.length) { %>
+      <p class="small" style="text-align:center;padding:20px;">Henuz kayit yok.</p>
+    <% } else { %>
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Tarih</th>
+            <th>Proje</th>
+            <th>Ad Soyad</th>
+            <th>Tur</th>
+            <th>Durum</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% recentEntries.forEach(function(e){ %>
+          <tr>
+            <td><span class="small"><%= e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '' %></span></td>
+            <td><span class="badge badge-primary"><%= e.project_name %></span></td>
+            <td><strong><%= e.full_name %></strong></td>
+            <td><span class="badge <%= e.entry_type==='Ziyaretçi'?'badge-success':e.entry_type==='Tedarikçi'?'badge-warning':'badge-default' %>"><%= e.entry_type %></span></td>
+            <td>
+              <% if (e.exit_at) { %>
+                <span class="badge badge-default">Cikti</span>
+              <% } else { %>
+                <span class="badge badge-success">Icerde</span>
+              <% } %>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="entry-cards">
+      <% recentEntries.forEach(function(e){ %>
+        <div class="entry-card">
+          <div class="entry-card-header">
+            <strong><%= e.full_name %></strong>
+            <% if (e.exit_at) { %>
+              <span class="badge badge-default">Cikti</span>
+            <% } else { %>
+              <span class="badge badge-success">Icerde</span>
+            <% } %>
+          </div>
+          <div class="entry-card-row"><span class="ecr-label">Proje</span><span class="ecr-value"><%= e.project_name %></span></div>
+          <div class="entry-card-row"><span class="ecr-label">Tur</span><span class="ecr-value"><%= e.entry_type %></span></div>
+          <div class="entry-card-row"><span class="ecr-label">Tarih</span><span class="ecr-value"><%= e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '' %></span></div>
+        </div>
+      <% }) %>
+    </div>
+    <% } %>
+    <div style="text-align:center;margin-top:12px;">
+      <a class="btn btn-sm primary" href="/admin/entries">Tum Kayitlari Gor</a>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+  var last7 = <%- last7 %>;
+  var typeCounts = <%- typeCounts %>;
+
+  // Bar chart - son 7 gun
+  new Chart(document.getElementById('chart7'), {
+    type: 'bar',
+    data: {
+      labels: last7.map(function(d){ return d.label; }),
+      datasets: [{
+        label: 'Giris Sayisi',
+        data: last7.map(function(d){ return d.count; }),
+        backgroundColor: 'rgba(99, 102, 241, 0.7)',
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1, color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.06)' } },
+        x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+      }
+    }
+  });
+
+  // Doughnut chart - tur dagilimi
+  var total = typeCounts.Ziyaretci + typeCounts.Tedarikci + typeCounts.Taseron;
+  new Chart(document.getElementById('chartType'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Ziyaretci', 'Tedarikci', 'Taseron'],
+      datasets: [{
+        data: [typeCounts.Ziyaretci, typeCounts.Tedarikci, typeCounts.Taseron],
+        backgroundColor: ['#22c55e', '#f59e0b', '#64748b'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 16 } }
+      }
+    }
+  });
+</script>
+
+<%- include('partials/layout_bottom') %>

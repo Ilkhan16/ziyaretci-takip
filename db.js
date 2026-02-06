@@ -206,6 +206,15 @@ function getEntryById(id) {
   return data.entries.find((e) => e.id === id) || null;
 }
 
+function updateEntryExit(id) {
+  const data = load();
+  const idx = data.entries.findIndex((e) => e.id === id);
+  if (idx === -1) return null;
+  data.entries[idx].exit_at = nowIso();
+  save(data);
+  return data.entries[idx];
+}
+
 function getLastEntryByTc(tc) {
   const data = load();
   const matches = data.entries
@@ -231,5 +240,6 @@ module.exports = {
   createEntry,
   listEntries,
   getEntryById,
+  updateEntryExit,
   getLastEntryByTc,
 };
