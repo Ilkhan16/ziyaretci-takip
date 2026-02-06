@@ -1,7 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 
-const dataPath = path.join(__dirname, 'data.json');
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+if (DATA_DIR !== __dirname && !fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+const dataPath = path.join(DATA_DIR, 'data.json');
 
 function nowIso() {
   return new Date().toISOString();
