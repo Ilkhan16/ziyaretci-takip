@@ -57,7 +57,21 @@ function requireAdmin(req, res, next) {
     req.session.adminUserId = null;
     return res.redirect('/admin/login');
   }
-  req.admin = { id: admin.id, email: admin.email, full_name: admin.full_name, is_active: admin.is_active };
+  req.admin = {
+    id: admin.id,
+    email: admin.email,
+    full_name: admin.full_name,
+    is_active: admin.is_active,
+    role: admin.role || 'admin',
+    project_ids: Array.isArray(admin.project_ids) ? admin.project_ids : [],
+  };
+  next();
+}
+
+function requireSuperAdmin(req, res, next) {
+  if (req.admin.role !== 'admin') {
+    return res.status(403).send('Yetkiniz yok.');
+  }
   next();
 }
 
@@ -159,7 +173,7 @@ app.post('/p/:slug', (req, res) => {
 
   const ip = getClientIp(req);
 
-  createEntry({
+  const entry = createEntry({
     project_id: project.id,
     entry_type: values.entry_type,
     tc_kimlik_no: values.tc_kimlik_no,
@@ -174,6 +188,7 @@ app.post('/p/:slug', (req, res) => {
   res.render('public_success', {
     title: 'Kayıt alındı',
     project,
+    entry,
   });
 });
 
@@ -249,13 +264,23 @@ app.post('/admin/logout', requireAdmin, (req, res) => {
 });
 
 app.get('/admin/entries', requireAdmin, (req, res) => {
-  const projects = listProjects({ activeOnly: true }).sort((a, b) => a.name.localeCompare(b.name));
+  let projects = listProjects({ activeOnly: false }).sort((a, b) => a.name.localeCompare(b.name));
+
+  // Customer rolü sadece kendi projelerini görsün
+  if (req.admin.role === 'customer') {
+    projects = projects.filter((p) => req.admin.project_ids.includes(p.id));
+  }
 
   const projectId = req.query.project_id ? Number(req.query.project_id) : null;
   const entryType = req.query.entry_type ? String(req.query.entry_type) : '';
 
   const normalizedProjectId = projectId && Number.isFinite(projectId) ? projectId : null;
   const normalizedEntryType = entryType && ['Ziyaretçi', 'Tedarikçi', 'Taşeron'].includes(entryType) ? entryType : '';
+
+  // Customer belirli bir proje seçtiyse, yetkisi var mı kontrol et
+  if (req.admin.role === 'customer' && normalizedProjectId && !req.admin.project_ids.includes(normalizedProjectId)) {
+    return res.status(403).send('Bu projeye erişim yetkiniz yok.');
+  }
 
   const rawEntries = listEntries({
     projectId: normalizedProjectId || undefined,
@@ -264,7 +289,7 @@ app.get('/admin/entries', requireAdmin, (req, res) => {
   });
 
   const projectMap = new Map(projects.map((p) => [p.id, p]));
-  const entries = rawEntries.map((e) => {
+  let entries = rawEntries.map((e) => {
     const p = projectMap.get(e.project_id) || null;
     return {
       ...e,
@@ -272,6 +297,11 @@ app.get('/admin/entries', requireAdmin, (req, res) => {
       project_slug: p ? p.slug : '',
     };
   });
+
+  // Customer rolü sadece kendi projelerinin kayıtlarını görsün
+  if (req.admin.role === 'customer') {
+    entries = entries.filter((e) => req.admin.project_ids.includes(e.project_id));
+  }
 
   res.render('admin_entries', {
     title: 'Kayıtlar',
@@ -285,7 +315,48 @@ app.get('/admin/entries', requireAdmin, (req, res) => {
   });
 });
 
-app.get('/admin/projects', requireAdmin, (req, res) => {
+// Excel CSV export
+app.get('/admin/entries/export', requireAdmin, (req, res) => {
+  let projects = listProjects({ activeOnly: false });
+  if (req.admin.role === 'customer') {
+    projects = projects.filter((p) => req.admin.project_ids.includes(p.id));
+  }
+
+  const projectId = req.query.project_id ? Number(req.query.project_id) : null;
+  const entryType = req.query.entry_type ? String(req.query.entry_type) : '';
+
+  if (req.admin.role === 'customer' && projectId && !req.admin.project_ids.includes(projectId)) {
+    return res.status(403).send('Yetkiniz yok.');
+  }
+
+  let rawEntries = listEntries({
+    projectId: projectId || undefined,
+    entryType: entryType || undefined,
+    limit: 10000,
+  });
+
+  if (req.admin.role === 'customer') {
+    rawEntries = rawEntries.filter((e) => req.admin.project_ids.includes(e.project_id));
+  }
+
+  const projectMap = new Map(projects.map((p) => [p.id, p]));
+
+  // BOM for Excel UTF-8
+  let csv = '\uFEFF';
+  csv += 'Proje;Giris Turu;TC Kimlik;Ad Soyad;Telefon;Ziyaret Edilen;Not;Tarih\n';
+  rawEntries.forEach((e) => {
+    const p = projectMap.get(e.project_id);
+    const pName = p ? p.name : '';
+    const date = e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '';
+    csv += `"${pName}";"${e.entry_type}";"${e.tc_kimlik_no}";"${e.full_name}";"${e.phone}";"${e.visited_person}";"${(e.note || '').replace(/"/g, '""')}";"${date}"\n`;
+  });
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename=kayitlar.csv');
+  res.send(csv);
+});
+
+app.get('/admin/projects', requireAdmin, requireSuperAdmin, (req, res) => {
   const projects = listProjects();
   res.render('admin_projects', {
     title: 'Projeler',
@@ -294,7 +365,7 @@ app.get('/admin/projects', requireAdmin, (req, res) => {
   });
 });
 
-app.get('/admin/projects/new', requireAdmin, (req, res) => {
+app.get('/admin/projects/new', requireAdmin, requireSuperAdmin, (req, res) => {
   res.render('admin_project_edit', {
     title: 'Proje Ekle',
     admin: req.admin,
@@ -313,7 +384,7 @@ app.get('/admin/projects/new', requireAdmin, (req, res) => {
   });
 });
 
-app.get('/admin/projects/:id', requireAdmin, (req, res) => {
+app.get('/admin/projects/:id', requireAdmin, requireSuperAdmin, (req, res) => {
   const id = Number(req.params.id);
   const project = getProjectById(id);
   if (!project) return res.status(404).send('Not found');
@@ -339,7 +410,7 @@ app.get('/admin/projects/:id', requireAdmin, (req, res) => {
   });
 });
 
-app.post('/admin/projects/save', requireAdmin, (req, res) => {
+app.post('/admin/projects/save', requireAdmin, requireSuperAdmin, (req, res) => {
   const id = req.body.id ? Number(req.body.id) : null;
 
   const values = {
@@ -412,12 +483,13 @@ app.post('/admin/projects/save', requireAdmin, (req, res) => {
   res.redirect('/admin/projects');
 });
 
-app.get('/admin/users', requireAdmin, (req, res) => {
+app.get('/admin/users', requireAdmin, requireSuperAdmin, (req, res) => {
   const users = listAdmins().map((u) => ({
     id: u.id,
     email: u.email,
     full_name: u.full_name,
     is_active: u.is_active,
+    role: u.role || 'admin',
     created_at: u.created_at,
   }));
   res.render('admin_users', {
@@ -427,30 +499,41 @@ app.get('/admin/users', requireAdmin, (req, res) => {
   });
 });
 
-app.get('/admin/users/new', requireAdmin, (req, res) => {
+app.get('/admin/users/new', requireAdmin, requireSuperAdmin, (req, res) => {
+  const allProjects = listProjects();
   res.render('admin_user_edit', {
-    title: 'Admin Kullanıcısı Ekle',
+    title: 'Kullanici Ekle',
     admin: req.admin,
     error: null,
     user: null,
-    values: { email: '', full_name: '', password: '', is_active: true },
+    allProjects,
+    values: { email: '', full_name: '', password: '', is_active: true, role: 'admin', project_ids: [] },
   });
 });
 
-app.get('/admin/users/:id', requireAdmin, (req, res) => {
+app.get('/admin/users/:id', requireAdmin, requireSuperAdmin, (req, res) => {
   const id = Number(req.params.id);
   const user = getAdminById(id);
   if (!user) return res.status(404).send('Not found');
+  const allProjects = listProjects();
   res.render('admin_user_edit', {
-    title: 'Admin Kullanıcısı Düzenle',
+    title: 'Kullanici Duzenle',
     admin: req.admin,
     error: null,
     user,
-    values: { email: user.email, full_name: user.full_name || '', password: '', is_active: user.is_active === 1 },
+    allProjects,
+    values: {
+      email: user.email,
+      full_name: user.full_name || '',
+      password: '',
+      is_active: user.is_active === 1,
+      role: user.role || 'admin',
+      project_ids: Array.isArray(user.project_ids) ? user.project_ids : [],
+    },
   });
 });
 
-app.post('/admin/users/save', requireAdmin, (req, res) => {
+app.post('/admin/users/save', requireAdmin, requireSuperAdmin, (req, res) => {
   const id = req.body.id ? Number(req.body.id) : null;
 
   const values = {
@@ -458,6 +541,10 @@ app.post('/admin/users/save', requireAdmin, (req, res) => {
     full_name: (req.body.full_name || '').trim(),
     password: req.body.password || '',
     is_active: req.body.is_active === 'on',
+    role: (req.body.role || 'admin').trim(),
+    project_ids: req.body.project_ids
+      ? (Array.isArray(req.body.project_ids) ? req.body.project_ids : [req.body.project_ids]).map(Number).filter(Number.isFinite)
+      : [],
   };
 
   const error =
@@ -468,32 +555,30 @@ app.post('/admin/users/save', requireAdmin, (req, res) => {
         : null;
 
   if (error) {
+    const allProjects = listProjects();
     return res.status(400).render('admin_user_edit', {
-      title: id ? 'Admin Kullanıcısı Düzenle' : 'Admin Kullanıcısı Ekle',
+      title: id ? 'Kullanici Duzenle' : 'Kullanici Ekle',
       admin: req.admin,
       error,
       user: id ? { id } : null,
+      allProjects,
       values,
     });
   }
 
   try {
     if (id) {
+      const patch = {
+        email: values.email,
+        full_name: values.full_name || null,
+        is_active: values.is_active,
+        role: values.role,
+        project_ids: values.project_ids,
+      };
       if (values.password) {
-        const hash = bcrypt.hashSync(values.password, 10);
-        updateAdmin(id, {
-          email: values.email,
-          full_name: values.full_name || null,
-          is_active: values.is_active,
-          password_hash: hash,
-        });
-      } else {
-        updateAdmin(id, {
-          email: values.email,
-          full_name: values.full_name || null,
-          is_active: values.is_active,
-        });
+        patch.password_hash = bcrypt.hashSync(values.password, 10);
       }
+      updateAdmin(id, patch);
 
       if (req.session.adminUserId === id && values.is_active === false) {
         req.session.adminUserId = null;
@@ -506,15 +591,19 @@ app.post('/admin/users/save', requireAdmin, (req, res) => {
         password_hash: hash,
         full_name: values.full_name || null,
         is_active: values.is_active,
+        role: values.role,
+        project_ids: values.project_ids,
       });
     }
   } catch (e) {
     const msg = String(e && e.message ? e.message : e);
+    const allProjects = listProjects();
     return res.status(400).render('admin_user_edit', {
-      title: id ? 'Admin Kullanıcısı Düzenle' : 'Admin Kullanıcısı Ekle',
+      title: id ? 'Kullanici Duzenle' : 'Kullanici Ekle',
       admin: req.admin,
       error: msg.includes('UNIQUE') ? 'Bu e-posta zaten kayıtlı.' : 'Kaydedilemedi.',
       user: id ? { id } : null,
+      allProjects,
       values,
     });
   }

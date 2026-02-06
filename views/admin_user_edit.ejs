@@ -22,12 +22,13 @@
     </div>
   <% } %>
 
-  <div class="card animate-in animate-delay-1">
-    <form class="form" method="post" action="/admin/users/save">
-      <% if (user && user.id) { %>
-        <input type="hidden" name="id" value="<%= user.id %>" />
-      <% } %>
+  <form class="form" method="post" action="/admin/users/save">
+    <% if (user && user.id) { %>
+      <input type="hidden" name="id" value="<%= user.id %>" />
+    <% } %>
 
+    <div class="card animate-in animate-delay-1">
+      <div class="h2">Hesap Bilgileri</div>
       <div class="grid">
         <div class="form-group">
           <div class="label">
@@ -61,13 +62,52 @@
           </label>
         </div>
       </div>
+    </div>
 
+    <div class="card animate-in animate-delay-2" style="margin-top:16px;">
+      <div class="h2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Rol ve Yetki
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <div class="label">Kullanici Rolu</div>
+        <select class="select" name="role" id="role_select">
+          <option value="admin" <%= values.role === 'admin' ? 'selected' : '' %>>Admin (Tam Yetki)</option>
+          <option value="customer" <%= values.role === 'customer' ? 'selected' : '' %>>Musteri (Sadece Atanan Projeler)</option>
+        </select>
+        <span class="small">Musteri rolu sadece atanan projelerin kayitlarini gorebilir</span>
+      </div>
+
+      <div id="project_assignment" style="<%= values.role === 'customer' ? '' : 'display:none;' %>">
+        <div class="label" style="margin-bottom:8px;">Atanan Projeler</div>
+        <% if (typeof allProjects !== 'undefined' && allProjects.length) { %>
+          <% allProjects.forEach(function(p){ %>
+            <label class="checkbox-label" style="margin-bottom:6px;">
+              <input type="checkbox" name="project_ids" value="<%= p.id %>" <%= (values.project_ids && values.project_ids.includes(p.id)) ? 'checked' : '' %> />
+              <span><%= p.name %> <span class="badge <%= p.is_active===1?'badge-success':'badge-danger' %>" style="font-size:10px;"><%= p.is_active===1?'Aktif':'Pasif' %></span></span>
+            </label>
+          <% }) %>
+        <% } else { %>
+          <p class="small">Henuz proje eklenmemis. Once proje olusturun.</p>
+        <% } %>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;">
       <button class="btn primary btn-block" type="submit">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         Kullaniciyi Kaydet
       </button>
-    </form>
-  </div>
+    </div>
+  </form>
 </div>
+
+<script>
+  var roleSelect = document.getElementById('role_select');
+  var projectDiv = document.getElementById('project_assignment');
+  roleSelect.addEventListener('change', function(){
+    projectDiv.style.display = roleSelect.value === 'customer' ? '' : 'none';
+  });
+</script>
 
 <%- include('partials/layout_bottom') %>

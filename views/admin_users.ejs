@@ -20,6 +20,7 @@
           <tr>
             <th>E-posta</th>
             <th>Ad Soyad</th>
+            <th>Rol</th>
             <th>Durum</th>
             <th>Olusturma</th>
             <th>Islem</th>
@@ -27,12 +28,13 @@
         </thead>
         <tbody>
           <% if (!users.length) { %>
-            <tr><td colspan="5" class="small" style="text-align:center;padding:32px;">Henuz kullanici eklenmemis.</td></tr>
+            <tr><td colspan="6" class="small" style="text-align:center;padding:32px;">Henuz kullanici eklenmemis.</td></tr>
           <% } %>
           <% users.forEach(function(u){ %>
             <tr>
               <td><strong><%= u.email %></strong></td>
               <td><%= u.full_name || '-' %></td>
+              <td><span class="badge <%= u.role==='customer'?'badge-warning':'badge-primary' %>"><%= u.role==='customer' ? 'Musteri' : 'Admin' %></span></td>
               <td><span class="badge <%= u.is_active===1?'badge-success':'badge-danger' %>"><%= u.is_active===1 ? 'Aktif' : 'Pasif' %></span></td>
               <td><span class="small"><%= u.created_at ? new Date(u.created_at).toLocaleString('tr-TR') : '' %></span></td>
               <td>
@@ -58,6 +60,7 @@
             <span class="badge <%= u.is_active===1?'badge-success':'badge-danger' %>"><%= u.is_active===1 ? 'Aktif' : 'Pasif' %></span>
           </div>
           <div class="entry-card-row"><span class="ecr-label">Ad</span><span class="ecr-value"><%= u.full_name || '-' %></span></div>
+          <div class="entry-card-row"><span class="ecr-label">Rol</span><span class="ecr-value"><span class="badge <%= u.role==='customer'?'badge-warning':'badge-primary' %>"><%= u.role==='customer' ? 'Musteri' : 'Admin' %></span></span></div>
           <div class="entry-card-row"><span class="ecr-label">Tarih</span><span class="ecr-value"><%= u.created_at ? new Date(u.created_at).toLocaleString('tr-TR') : '' %></span></div>
           <a class="btn btn-sm primary" href="/admin/users/<%= u.id %>" style="margin-top:8px;">Duzenle</a>
         </div>

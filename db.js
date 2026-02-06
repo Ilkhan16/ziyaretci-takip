@@ -61,7 +61,7 @@ function listAdmins() {
   return [...data.admin_users].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
 }
 
-function createAdmin({ email, password_hash, full_name, is_active }) {
+function createAdmin({ email, password_hash, full_name, is_active, role, project_ids }) {
   const data = load();
   const norm = normalizeEmail(email);
   if (data.admin_users.some((u) => normalizeEmail(u.email) === norm)) {
@@ -75,6 +75,8 @@ function createAdmin({ email, password_hash, full_name, is_active }) {
     password_hash,
     full_name: full_name || null,
     is_active: is_active ? 1 : 0,
+    role: role || 'admin',
+    project_ids: Array.isArray(project_ids) ? project_ids : [],
     created_at: nowIso(),
   };
   data.admin_users.push(user);
@@ -105,6 +107,12 @@ function updateAdmin(id, patch) {
   }
   if (patch.password_hash) {
     data.admin_users[idx].password_hash = patch.password_hash;
+  }
+  if (typeof patch.role !== 'undefined') {
+    data.admin_users[idx].role = patch.role || 'admin';
+  }
+  if (typeof patch.project_ids !== 'undefined') {
+    data.admin_users[idx].project_ids = Array.isArray(patch.project_ids) ? patch.project_ids : [];
   }
 
   save(data);

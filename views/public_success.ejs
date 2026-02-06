@@ -1,6 +1,6 @@
 <%- include('partials/layout_top', { title }) %>
 
-<div class="nav">
+<div class="nav no-print">
   <div class="brand">
     <div class="brand-icon">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
@@ -12,7 +12,7 @@
   </div>
 </div>
 
-<div class="card animate-in text-center" style="padding:48px 28px;">
+<div class="card animate-in text-center no-print" style="padding:48px 28px;">
   <div class="success-icon">
     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
   </div>
@@ -20,16 +20,33 @@
   <p class="p-lg" style="max-width:420px;margin:0 auto 28px;">
     Bilgileriniz kaydedilmistir. Tesisimize hos geldiniz, keyifli ve guvenli bir ziyaret dileriz.
   </p>
-  <div class="btn-group" style="justify-content:center;">
+  <div class="btn-group" style="justify-content:center;flex-wrap:wrap;">
     <a class="btn primary" href="/p/<%= project.slug %>">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Yeni Kayit Olustur
+      Yeni Kayit
     </a>
-    <a class="btn" href="/p/<%= project.slug %>/qr">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      QR Kod
-    </a>
+    <button class="btn" type="button" onclick="window.print()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Ziyaretci Karti Yazdir
+    </button>
   </div>
+</div>
+
+<div class="visitor-card" id="visitor-card">
+  <div class="vc-header">
+    <div class="vc-brand"><%= project.name %></div>
+    <div class="vc-title">ZIYARETCI KARTI</div>
+  </div>
+  <div class="vc-body">
+    <div class="vc-row"><span class="vc-label">Ad Soyad</span><span class="vc-value"><%= entry.full_name %></span></div>
+    <div class="vc-row"><span class="vc-label">Giris Turu</span><span class="vc-value"><%= entry.entry_type %></span></div>
+    <div class="vc-row"><span class="vc-label">Ziyaret Edilen</span><span class="vc-value"><%= entry.visited_person %></span></div>
+    <div class="vc-row"><span class="vc-label">Tarih / Saat</span><span class="vc-value"><%= entry.created_at ? new Date(entry.created_at).toLocaleString('tr-TR') : '' %></span></div>
+    <% if (entry.note) { %>
+    <div class="vc-row"><span class="vc-label">Not</span><span class="vc-value"><%= entry.note %></span></div>
+    <% } %>
+  </div>
+  <div class="vc-footer">ISG kurallari okunmus ve kabul edilmistir.</div>
 </div>
 
 <%- include('partials/layout_bottom') %>
