@@ -193,6 +193,14 @@ function listEntries({ projectId, entryType, limit } = {}) {
   return items;
 }
 
+function getLastEntryByTc(tc) {
+  const data = load();
+  const matches = data.entries
+    .filter((e) => e.tc_kimlik_no === tc)
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  return matches.length > 0 ? matches[0] : null;
+}
+
 module.exports = {
   nowIso,
   // admins
@@ -209,4 +217,5 @@ module.exports = {
   // entries
   createEntry,
   listEntries,
+  getLastEntryByTc,
 };

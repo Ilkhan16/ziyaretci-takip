@@ -19,12 +19,14 @@ const {
   saveProject,
   createEntry,
   listEntries,
+  getLastEntryByTc,
 } = require('./db');
 
 const app = express();
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
-const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+let BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+if (!/^https?:\/\//i.test(BASE_URL)) BASE_URL = 'https://' + BASE_URL;
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -73,6 +75,20 @@ function safeArray(value) {
 
 app.get('/', (req, res) => {
   res.redirect('/admin');
+});
+
+// TC lookup API — returns last entry info for auto-fill
+app.get('/api/tc-lookup/:tc', (req, res) => {
+  const tc = (req.params.tc || '').trim();
+  if (!/^[0-9]{11}$/.test(tc)) return res.json({ found: false });
+  const entry = getLastEntryByTc(tc);
+  if (!entry) return res.json({ found: false });
+  res.json({
+    found: true,
+    full_name: entry.full_name,
+    phone: entry.phone,
+    entry_type: entry.entry_type,
+  });
 });
 
 // Public form (project specific)

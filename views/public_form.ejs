@@ -139,6 +139,50 @@
   }
   sel.addEventListener('change', render);
   render();
+
+  // TC auto-fill: 11 hane girilince son kaydi getir
+  var tcInput = document.querySelector('input[name="tc_kimlik_no"]');
+  var nameInput = document.querySelector('input[name="full_name"]');
+  var phoneInput = document.querySelector('input[name="phone"]');
+  var tcStatus = document.createElement('span');
+  tcStatus.className = 'small';
+  tcStatus.style.color = 'var(--success)';
+  tcInput.parentNode.appendChild(tcStatus);
+
+  var lastLookedUp = '';
+  tcInput.addEventListener('input', function(){
+    var tc = tcInput.value.replace(/\D/g, '');
+    if (tc.length === 11 && tc !== lastLookedUp) {
+      lastLookedUp = tc;
+      tcStatus.textContent = 'Kontrol ediliyor...';
+      tcStatus.style.color = 'var(--text-muted)';
+      fetch('/api/tc-lookup/' + tc)
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (d.found) {
+            nameInput.value = d.full_name || '';
+            phoneInput.value = d.phone || '';
+            if (d.entry_type && sel) {
+              for (var i = 0; i < sel.options.length; i++) {
+                if (sel.options[i].value === d.entry_type) {
+                  sel.selectedIndex = i;
+                  render();
+                  break;
+                }
+              }
+            }
+            tcStatus.textContent = '✓ Bilgiler onceki kayittan dolduruldu';
+            tcStatus.style.color = 'var(--success)';
+          } else {
+            tcStatus.textContent = '';
+          }
+        })
+        .catch(function(){ tcStatus.textContent = ''; });
+    } else if (tc.length < 11) {
+      tcStatus.textContent = '';
+      lastLookedUp = '';
+    }
+  });
 </script>
 
 <%- include('partials/layout_bottom') %>
