@@ -1,0 +1,91 @@
+<%- include('partials/layout_top', { title }) %>
+<%- include('partials/admin_nav', { admin }) %>
+
+<div class="animate-in">
+  <div class="card-header">
+    <h1 class="h1" style="margin:0;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      Projeler
+    </h1>
+    <a class="btn primary" href="/admin/projects/new">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Proje Ekle
+    </a>
+  </div>
+
+  <div class="stats animate-in animate-delay-1">
+    <div class="stat-card">
+      <div class="stat-value"><%= projects.length %></div>
+      <div class="stat-label">Toplam Proje</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value"><%= projects.filter(function(p){return p.is_active===1}).length %></div>
+      <div class="stat-label">Aktif</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value"><%= projects.filter(function(p){return p.is_active!==1}).length %></div>
+      <div class="stat-label">Pasif</div>
+    </div>
+  </div>
+
+  <div class="card animate-in animate-delay-2">
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Proje Adi</th>
+            <th>URL</th>
+            <th>Durum</th>
+            <th>QR</th>
+            <th>Islem</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!projects.length) { %>
+            <tr><td colspan="5" class="small" style="text-align:center;padding:32px;">Henuz proje eklenmemis.</td></tr>
+          <% } %>
+          <% projects.forEach(function(p){ %>
+            <tr>
+              <td><strong><%= p.name %></strong></td>
+              <td><span class="badge badge-primary">/p/<%= p.slug %></span></td>
+              <td><span class="badge <%= p.is_active===1?'badge-success':'badge-danger' %>"><%= p.is_active===1 ? 'Aktif' : 'Pasif' %></span></td>
+              <td>
+                <a class="btn btn-sm" href="/p/<%= p.slug %>/qr" target="_blank">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                  QR
+                </a>
+              </td>
+              <td>
+                <a class="btn btn-sm primary" href="/admin/projects/<%= p.id %>">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Duzenle
+                </a>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="entry-cards">
+      <% if (!projects.length) { %>
+        <div class="text-center" style="padding:24px;"><p class="p">Henuz proje eklenmemis.</p></div>
+      <% } %>
+      <% projects.forEach(function(p){ %>
+        <div class="entry-card">
+          <div class="entry-card-header">
+            <strong><%= p.name %></strong>
+            <span class="badge <%= p.is_active===1?'badge-success':'badge-danger' %>"><%= p.is_active===1 ? 'Aktif' : 'Pasif' %></span>
+          </div>
+          <div class="entry-card-row"><span class="ecr-label">URL</span><span class="ecr-value">/p/<%= p.slug %></span></div>
+          <div class="btn-group" style="margin-top:8px;">
+            <a class="btn btn-sm" href="/p/<%= p.slug %>/qr" target="_blank">QR</a>
+            <a class="btn btn-sm primary" href="/admin/projects/<%= p.id %>">Duzenle</a>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/layout_bottom') %>

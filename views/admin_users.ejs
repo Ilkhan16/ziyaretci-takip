@@ -1,0 +1,69 @@
+<%- include('partials/layout_top', { title }) %>
+<%- include('partials/admin_nav', { admin }) %>
+
+<div class="animate-in">
+  <div class="card-header">
+    <h1 class="h1" style="margin:0;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Admin Kullanicilari
+    </h1>
+    <a class="btn primary" href="/admin/users/new">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Kullanici Ekle
+    </a>
+  </div>
+
+  <div class="card animate-in animate-delay-1">
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>E-posta</th>
+            <th>Ad Soyad</th>
+            <th>Durum</th>
+            <th>Olusturma</th>
+            <th>Islem</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!users.length) { %>
+            <tr><td colspan="5" class="small" style="text-align:center;padding:32px;">Henuz kullanici eklenmemis.</td></tr>
+          <% } %>
+          <% users.forEach(function(u){ %>
+            <tr>
+              <td><strong><%= u.email %></strong></td>
+              <td><%= u.full_name || '-' %></td>
+              <td><span class="badge <%= u.is_active===1?'badge-success':'badge-danger' %>"><%= u.is_active===1 ? 'Aktif' : 'Pasif' %></span></td>
+              <td><span class="small"><%= u.created_at ? new Date(u.created_at).toLocaleString('tr-TR') : '' %></span></td>
+              <td>
+                <a class="btn btn-sm primary" href="/admin/users/<%= u.id %>">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Duzenle
+                </a>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="entry-cards">
+      <% if (!users.length) { %>
+        <div class="text-center" style="padding:24px;"><p class="p">Henuz kullanici eklenmemis.</p></div>
+      <% } %>
+      <% users.forEach(function(u){ %>
+        <div class="entry-card">
+          <div class="entry-card-header">
+            <strong><%= u.email %></strong>
+            <span class="badge <%= u.is_active===1?'badge-success':'badge-danger' %>"><%= u.is_active===1 ? 'Aktif' : 'Pasif' %></span>
+          </div>
+          <div class="entry-card-row"><span class="ecr-label">Ad</span><span class="ecr-value"><%= u.full_name || '-' %></span></div>
+          <div class="entry-card-row"><span class="ecr-label">Tarih</span><span class="ecr-value"><%= u.created_at ? new Date(u.created_at).toLocaleString('tr-TR') : '' %></span></div>
+          <a class="btn btn-sm primary" href="/admin/users/<%= u.id %>" style="margin-top:8px;">Duzenle</a>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/layout_bottom') %>

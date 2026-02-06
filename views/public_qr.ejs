@@ -1,0 +1,48 @@
+<%- include('partials/layout_top', { title }) %>
+
+<div class="nav">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    </div>
+    <div class="brand-text">
+      <strong><%= project.name %></strong>
+      <span>QR Kod</span>
+    </div>
+  </div>
+  <a class="btn btn-sm primary" href="/p/<%= project.slug %>">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    Forma Git
+  </a>
+</div>
+
+<div class="card animate-in">
+  <div class="kv" style="margin-bottom:16px;">
+    <span class="badge badge-primary">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      <%= formUrl %>
+    </span>
+  </div>
+  <div class="hr"></div>
+  <div class="qr-container">
+    <img class="qr-image" src="/p/<%= project.slug %>/qr.png" alt="QR Kod" />
+    <div class="qr-info">
+      <h2 class="h1" style="margin-bottom:8px;">QR Kodu Okutun</h2>
+      <p class="p">Bu QR kod okutuldugunda dogrudan giris formu acilir. Ziyaretciler telefonlariyla QR kodu okutarak kolayca giris yapabilir.</p>
+      <div class="hr"></div>
+      <div class="btn-group">
+        <a class="btn primary" href="/p/<%= project.slug %>/qr.png" download="<%= project.slug %>-qr.png">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG Indir
+        </a>
+        <a class="btn" href="/p/<%= project.slug %>">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Formu Ac
+        </a>
+      </div>
+      <p class="small" style="margin-top:8px;">QR kodu yazdirip giris noktasina asabilirsiniz.</p>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/layout_bottom') %>

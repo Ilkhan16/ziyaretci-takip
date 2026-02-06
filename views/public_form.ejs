@@ -1,0 +1,144 @@
+<%- include('partials/layout_top', { title }) %>
+
+<div class="nav">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+    </div>
+    <div class="brand-text">
+      <strong><%= project.name %></strong>
+      <span>Ziyaretci Giris Kayit Formu</span>
+    </div>
+  </div>
+  <a class="btn btn-sm" href="/p/<%= project.slug %>/qr">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    QR Kod
+  </a>
+</div>
+
+<div class="card animate-in">
+  <% if (errors && errors.length) { %>
+    <div class="alert alert-danger">
+      <span class="alert-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      </span>
+      <div class="alert-body">
+        <ul>
+          <% errors.forEach(function(e){ %>
+            <li><%= e %></li>
+          <% }) %>
+        </ul>
+      </div>
+    </div>
+    <div class="hr"></div>
+  <% } %>
+
+  <form class="form" method="post" action="/p/<%= project.slug %>">
+
+    <div class="form-group">
+      <div class="label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/></svg>
+        Giris Turu
+      </div>
+      <select class="select" name="entry_type" id="entry_type" required>
+        <option value="">-- Seciniz --</option>
+        <% entryTypes.forEach(function(t){ %>
+          <option value="<%= t %>" <%= values.entry_type===t?'selected':'' %>><%= t %></option>
+        <% }) %>
+      </select>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="grid">
+      <div class="form-group">
+        <div class="label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          TC Kimlik Numarasi
+        </div>
+        <input class="input" name="tc_kimlik_no" placeholder="xxxxxxxxxxx" inputmode="numeric" pattern="[0-9]{11}" maxlength="11" value="<%= values.tc_kimlik_no %>" required />
+        <span class="small">11 haneli TC kimlik numaranizi giriniz</span>
+      </div>
+      <div class="form-group">
+        <div class="label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Ad Soyad
+        </div>
+        <input class="input" name="full_name" placeholder="Adiniz Soyadiniz" value="<%= values.full_name %>" required />
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="form-group">
+        <div class="label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          Cep Telefonu
+        </div>
+        <input class="input" name="phone" placeholder="05xx xxx xx xx" inputmode="tel" value="<%= values.phone %>" required />
+      </div>
+      <div class="form-group">
+        <div class="label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Ziyaret Edilen Kisi
+        </div>
+        <select class="select" name="visited_person" required>
+          <option value="">-- Seciniz --</option>
+          <% authorizedPeople.forEach(function(p){ %>
+            <option value="<%= p %>" <%= values.visited_person===p?'selected':'' %>><%= p %></option>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+        Not <span class="label-hint">(istege bagli)</span>
+      </div>
+      <textarea class="textarea" name="note" placeholder="Varsa eklemek istediginiz notunuzu yaziniz..."><%= values.note %></textarea>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="form-group">
+      <div class="label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Is Sagligi ve Guvenligi Kurallari
+      </div>
+      <div class="isg-box" id="isg_box"></div>
+    </div>
+
+    <label class="checkbox-label">
+      <input type="checkbox" name="isg_accepted" <%= values.isg_accepted?'checked':'' %> />
+      <span>Yukaridaki ISG kurallarini okudum, anladim ve kabul ediyorum. Kurallara uymadigi takdirde dogacak sorumlulugu kabul ederim.</span>
+    </label>
+
+    <button class="btn primary btn-block" type="submit">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>
+      Formu Gonder
+    </button>
+
+    <div class="footer">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      Kayit tarihi, saati ve IP adresiniz otomatik olarak kaydedilmektedir.
+    </div>
+  </form>
+</div>
+
+<script>
+  var isg = <%- JSON.stringify({
+    'Ziyaretçi': project.isg_text_ziyaretci,
+    'Tedarikçi': project.isg_text_tedarikci,
+    'Taşeron': project.isg_text_taseron
+  }) %>;
+  var sel = document.getElementById('entry_type');
+  var box = document.getElementById('isg_box');
+  function render(){
+    var t = sel.value;
+    box.textContent = t && isg[t] ? isg[t] : 'Lutfen once giris turunu seciniz.';
+  }
+  sel.addEventListener('change', render);
+  render();
+</script>
+
+<%- include('partials/layout_bottom') %>

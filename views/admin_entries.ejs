@@ -1,0 +1,125 @@
+<%- include('partials/layout_top', { title }) %>
+<%- include('partials/admin_nav', { admin }) %>
+
+<div class="animate-in">
+  <div class="card-header">
+    <h1 class="h1" style="margin:0;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Giris Kayitlari
+    </h1>
+  </div>
+
+  <div class="stats animate-in animate-delay-1">
+    <div class="stat-card">
+      <div class="stat-value"><%= entries.length %></div>
+      <div class="stat-label">Toplam Sonuc</div>
+    </div>
+    <% var zCount = entries.filter(function(e){ return e.entry_type==='Ziyaretçi' }).length; %>
+    <div class="stat-card">
+      <div class="stat-value"><%= zCount %></div>
+      <div class="stat-label">Ziyaretci</div>
+    </div>
+    <% var tCount = entries.filter(function(e){ return e.entry_type==='Tedarikçi' }).length; %>
+    <div class="stat-card">
+      <div class="stat-value"><%= tCount %></div>
+      <div class="stat-label">Tedarikci</div>
+    </div>
+    <% var taCount = entries.filter(function(e){ return e.entry_type==='Taşeron' }).length; %>
+    <div class="stat-card">
+      <div class="stat-value"><%= taCount %></div>
+      <div class="stat-label">Taseron</div>
+    </div>
+  </div>
+
+  <form class="filter-bar animate-in animate-delay-1" method="get" action="/admin/entries">
+    <div class="form-group">
+      <div class="label">Proje</div>
+      <select class="select" name="project_id">
+        <option value="">Tumu</option>
+        <% projects.forEach(function(p){ %>
+          <option value="<%= p.id %>" <%= String(filters.project_id)===String(p.id)?'selected':'' %>><%= p.name %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-group">
+      <div class="label">Giris Turu</div>
+      <select class="select" name="entry_type">
+        <option value="">Tumu</option>
+        <option value="Ziyaretçi" <%= filters.entry_type==='Ziyaretçi'?'selected':'' %>>Ziyaretci</option>
+        <option value="Tedarikçi" <%= filters.entry_type==='Tedarikçi'?'selected':'' %>>Tedarikci</option>
+        <option value="Taşeron" <%= filters.entry_type==='Taşeron'?'selected':'' %>>Taseron</option>
+      </select>
+    </div>
+    <button class="btn primary" type="submit">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Filtrele
+    </button>
+  </form>
+
+  <div class="card animate-in animate-delay-2">
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Tarih / Saat</th>
+            <th>Proje</th>
+            <th>Tur</th>
+            <th>TC Kimlik</th>
+            <th>Ad Soyad</th>
+            <th>Telefon</th>
+            <th>Ziyaret Edilen</th>
+            <th>Not</th>
+            <th>IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!entries.length) { %>
+            <tr><td colspan="9" class="small" style="text-align:center;padding:32px;">Kayit bulunamadi.</td></tr>
+          <% } %>
+          <% entries.forEach(function(e){ %>
+            <tr>
+              <td><%= e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '' %></td>
+              <td><span class="badge badge-primary"><%= e.project_name %></span></td>
+              <td><span class="badge <%= e.entry_type==='Ziyaretçi'?'badge-success':e.entry_type==='Tedarikçi'?'badge-warning':'badge-default' %>"><%= e.entry_type %></span></td>
+              <td><%= e.tc_kimlik_no %></td>
+              <td><strong><%= e.full_name %></strong></td>
+              <td><%= e.phone %></td>
+              <td><%= e.visited_person %></td>
+              <td><%= e.note || '-' %></td>
+              <td><span class="small"><%= e.ip_address || '-' %></span></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="entry-cards">
+      <% if (!entries.length) { %>
+        <div class="text-center" style="padding:24px;">
+          <p class="p">Kayit bulunamadi.</p>
+        </div>
+      <% } %>
+      <% entries.forEach(function(e){ %>
+        <div class="entry-card">
+          <div class="entry-card-header">
+            <strong><%= e.full_name %></strong>
+            <span class="badge <%= e.entry_type==='Ziyaretçi'?'badge-success':e.entry_type==='Tedarikçi'?'badge-warning':'badge-default' %>"><%= e.entry_type %></span>
+          </div>
+          <div class="entry-card-row"><span class="ecr-label">Proje</span><span class="ecr-value"><%= e.project_name %></span></div>
+          <div class="entry-card-row"><span class="ecr-label">TC</span><span class="ecr-value"><%= e.tc_kimlik_no %></span></div>
+          <div class="entry-card-row"><span class="ecr-label">Telefon</span><span class="ecr-value"><%= e.phone %></span></div>
+          <div class="entry-card-row"><span class="ecr-label">Ziyaret</span><span class="ecr-value"><%= e.visited_person %></span></div>
+          <% if (e.note) { %>
+            <div class="entry-card-row"><span class="ecr-label">Not</span><span class="ecr-value"><%= e.note %></span></div>
+          <% } %>
+          <div class="entry-card-row"><span class="ecr-label">Tarih</span><span class="ecr-value"><%= e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '' %></span></div>
+          <div class="entry-card-row"><span class="ecr-label">IP</span><span class="ecr-value"><%= e.ip_address || '-' %></span></div>
+        </div>
+      <% }) %>
+    </div>
+
+    <div class="footer">Son 500 kayit gosterilir.</div>
+  </div>
+</div>
+
+<%- include('partials/layout_bottom') %>
