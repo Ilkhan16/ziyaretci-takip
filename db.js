@@ -201,6 +201,11 @@ function listEntries({ projectId, entryType, limit } = {}) {
   return items;
 }
 
+function getEntryById(id) {
+  const data = load();
+  return data.entries.find((e) => e.id === id) || null;
+}
+
 function getLastEntryByTc(tc) {
   const data = load();
   const matches = data.entries
@@ -225,5 +230,6 @@ module.exports = {
   // entries
   createEntry,
   listEntries,
+  getEntryById,
   getLastEntryByTc,
 };

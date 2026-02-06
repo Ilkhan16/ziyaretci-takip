@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ziyaretci Karti</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',Arial,sans-serif;background:#f5f5f5;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+
+    .actions{margin-bottom:20px;display:flex;gap:10px}
+    .actions button,.actions a{
+      display:inline-flex;align-items:center;gap:6px;padding:10px 20px;
+      border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;
+      text-decoration:none;color:#fff;
+    }
+    .btn-print{background:#2563eb}
+    .btn-print:hover{background:#1d4ed8}
+    .btn-back{background:#64748b;color:#fff}
+    .btn-back:hover{background:#475569}
+
+    .card{
+      width:400px;max-width:100%;border:2px solid #333;border-radius:12px;
+      padding:28px 24px;background:#fff;
+    }
+
+    .card-header{text-align:center;border-bottom:2px solid #222;padding-bottom:14px;margin-bottom:16px}
+    .card-brand{font-size:20px;font-weight:800;letter-spacing:.5px;color:#111}
+    .card-title{font-size:12px;text-transform:uppercase;letter-spacing:2px;color:#888;margin-top:4px}
+
+    .card-body{display:flex;flex-direction:column;gap:10px}
+    .row{display:flex}
+    .row-label{font-weight:700;min-width:130px;color:#444;font-size:13px}
+    .row-value{font-size:13px;color:#111;font-weight:500}
+
+    .card-footer{
+      margin-top:16px;padding-top:12px;border-top:1px solid #ddd;
+      font-size:11px;color:#999;text-align:center;font-style:italic
+    }
+
+    .card-stamp{
+      margin-top:20px;display:flex;justify-content:space-between;align-items:flex-end
+    }
+    .stamp-box{
+      border:1px dashed #aaa;border-radius:6px;width:120px;height:60px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:10px;color:#bbb;text-transform:uppercase
+    }
+
+    @media print{
+      body{background:#fff;padding:0;margin:0}
+      .actions{display:none !important}
+      .card{border:2px solid #000;box-shadow:none;width:400px}
+    }
+  </style>
+</head>
+<body>
+  <div class="actions">
+    <button class="btn-print" onclick="window.print()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Yazdir
+    </button>
+    <a class="btn-back" href="/admin/entries">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Geri Don
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-brand"><%= project ? project.name : '' %></div>
+      <div class="card-title">Ziyaretci Karti</div>
+    </div>
+    <div class="card-body">
+      <div class="row"><span class="row-label">Ad Soyad</span><span class="row-value"><%= entry.full_name %></span></div>
+      <div class="row"><span class="row-label">Giris Turu</span><span class="row-value"><%= entry.entry_type %></span></div>
+      <div class="row"><span class="row-label">TC Kimlik No</span><span class="row-value"><%= entry.tc_kimlik_no %></span></div>
+      <div class="row"><span class="row-label">Telefon</span><span class="row-value"><%= entry.phone %></span></div>
+      <div class="row"><span class="row-label">Ziyaret Edilen</span><span class="row-value"><%= entry.visited_person %></span></div>
+      <div class="row"><span class="row-label">Tarih / Saat</span><span class="row-value"><%= entry.created_at ? new Date(entry.created_at).toLocaleString('tr-TR') : '' %></span></div>
+      <% if (entry.note) { %>
+      <div class="row"><span class="row-label">Not</span><span class="row-value"><%= entry.note %></span></div>
+      <% } %>
+    </div>
+    <div class="card-footer">ISG kurallari okunmus ve kabul edilmistir.</div>
+    <div class="card-stamp">
+      <div class="stamp-box">Guvenlik Onay</div>
+      <div class="stamp-box">Imza</div>
+    </div>
+  </div>
+</body>
+</html>

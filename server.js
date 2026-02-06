@@ -3,6 +3,7 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const QRCode = require('qrcode');
@@ -19,6 +20,7 @@ const {
   saveProject,
   createEntry,
   listEntries,
+  getEntryById,
   getLastEntryByTc,
 } = require('./db');
 
@@ -36,6 +38,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   session({
+    store: new FileStore({ path: path.join(__dirname, 'sessions'), ttl: 86400, retries: 0, logFn: function(){} }),
     secret: process.env.SESSION_SECRET || 'change-me',
     resave: false,
     saveUninitialized: false,
@@ -312,6 +315,25 @@ app.get('/admin/entries', requireAdmin, (req, res) => {
       project_id: projectId || '',
       entry_type: entryType || '',
     },
+  });
+});
+
+// Visitor card print page
+app.get('/admin/entries/:id/print', requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const entry = getEntryById(id);
+  if (!entry) return res.status(404).send('Kayit bulunamadi.');
+
+  // Customer yetki kontrolu
+  if (req.admin.role === 'customer' && !req.admin.project_ids.includes(entry.project_id)) {
+    return res.status(403).send('Bu kayda erisim yetkiniz yok.');
+  }
+
+  const project = getProjectById(entry.project_id);
+  res.render('print_visitor_card', {
+    title: 'Ziyaretci Karti',
+    entry,
+    project,
   });
 });
 

@@ -74,11 +74,12 @@
             <th>Ziyaret Edilen</th>
             <th>Not</th>
             <th>IP</th>
+            <th>Kart</th>
           </tr>
         </thead>
         <tbody>
           <% if (!entries.length) { %>
-            <tr><td colspan="9" class="small" style="text-align:center;padding:32px;">Kayit bulunamadi.</td></tr>
+            <tr><td colspan="10" class="small" style="text-align:center;padding:32px;">Kayit bulunamadi.</td></tr>
           <% } %>
           <% entries.forEach(function(e){ %>
             <tr>
@@ -91,6 +92,7 @@
               <td><%= e.visited_person %></td>
               <td><%= e.note || '-' %></td>
               <td><span class="small"><%= e.ip_address || '-' %></span></td>
+              <td><a class="btn btn-sm" href="/admin/entries/<%= e.id %>/print" target="_blank" title="Yazdir"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></a></td>
             </tr>
           <% }) %>
         </tbody>
@@ -118,6 +120,10 @@
           <% } %>
           <div class="entry-card-row"><span class="ecr-label">Tarih</span><span class="ecr-value"><%= e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '' %></span></div>
           <div class="entry-card-row"><span class="ecr-label">IP</span><span class="ecr-value"><%= e.ip_address || '-' %></span></div>
+          <a class="btn btn-sm" href="/admin/entries/<%= e.id %>/print" target="_blank" style="margin-top:8px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Kart Yazdir
+          </a>
         </div>
       <% }) %>
     </div>
