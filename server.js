@@ -3,7 +3,7 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const session = require('express-session');
-const FileStore = require('session-file-store')(session);
+const MemoryStore = require('memorystore')(session);
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const QRCode = require('qrcode');
@@ -39,7 +39,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   session({
-    store: new FileStore({ path: path.join(__dirname, 'sessions'), ttl: 86400, retries: 0, logFn: function(){} }),
+    store: new MemoryStore({ checkPeriod: 86400000 }),
     secret: process.env.SESSION_SECRET || 'change-me',
     resave: false,
     saveUninitialized: false,
