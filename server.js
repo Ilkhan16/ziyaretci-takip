@@ -124,34 +124,28 @@ setInterval(() => {
 }, 15 * 60 * 1000);
 
 // ── Mail gönderimi ───────────────────────────────────────────────
-const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').trim();
-const MAIL_FROM_EMAIL = (process.env.MAIL_FROM || process.env.SMTP_FROM || '').trim();
-const MAIL_FROM_NAME = (process.env.MAIL_FROM_NAME || 'Ziyaretçi Takip').trim();
+const MAIL_WEBHOOK_URL = (process.env.MAIL_WEBHOOK_URL || '').trim();
 let mailTransporter = null;
 
-// Öncelik: 1) Brevo HTTP API (Railway için), 2) SMTP (localhost için)
-if (BREVO_API_KEY) {
-  console.log(`✓ Brevo API key bulundu, HTTP tabanlı mail aktif (from: ${MAIL_FROM_EMAIL})`);
+// Öncelik: 1) Webhook (Google Apps Script - Railway için), 2) SMTP (localhost için)
+if (MAIL_WEBHOOK_URL) {
+  console.log('✓ Mail webhook URL bulundu, HTTP tabanlı mail aktif');
 } else {
   const smtpHost = (process.env.SMTP_HOST || '').trim();
   const smtpUser = (process.env.SMTP_USER || '').trim();
   const smtpPass = (process.env.SMTP_PASS || '').trim();
   if (smtpHost && smtpUser && smtpPass) {
-    const dns = require('dns');
-    dns.resolve4(smtpHost, (err, addresses) => {
-      const host = (!err && addresses && addresses.length) ? addresses[0] : smtpHost;
-      mailTransporter = nodemailer.createTransport({
-        host, port: parseInt(process.env.SMTP_PORT || '587', 10),
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: { user: smtpUser, pass: smtpPass },
-        connectionTimeout: 10000, tls: { rejectUnauthorized: false, servername: smtpHost }, family: 4,
-      });
-      console.log(`ℹ SMTP transport oluşturuldu (${host})`);
-      mailTransporter.verify().then(() => console.log('✓ SMTP mail bağlantısı başarılı'))
-        .catch((e) => console.error('✗ SMTP verify hatası:', e.message));
+    mailTransporter = nodemailer.createTransport({
+      host: smtpHost, port: parseInt(process.env.SMTP_PORT || '587', 10),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: { user: smtpUser, pass: smtpPass },
+      connectionTimeout: 10000, family: 4,
     });
+    console.log('ℹ SMTP transport oluşturuldu');
+    mailTransporter.verify().then(() => console.log('✓ SMTP mail bağlantısı başarılı'))
+      .catch((e) => console.error('✗ SMTP verify hatası:', e.message));
   } else {
-    console.log('ℹ Mail ayarları yapılmamış (BREVO_API_KEY veya SMTP), mail gönderimi devre dışı');
+    console.log('ℹ Mail ayarları yapılmamış (MAIL_WEBHOOK_URL veya SMTP), mail gönderimi devre dışı');
   }
 }
 
@@ -192,22 +186,13 @@ function buildMailHtml(project, entry) {
     </div>`;
 }
 
-async function sendViaBrevo(to, subject, html) {
-  const toList = (Array.isArray(to) ? to : [to]).map((e) => ({ email: e }));
-  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+async function sendViaWebhook(to, subject, html) {
+  const res = await fetch(MAIL_WEBHOOK_URL, {
     method: 'POST',
-    headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({
-      sender: { name: MAIL_FROM_NAME, email: MAIL_FROM_EMAIL },
-      to: toList,
-      subject,
-      htmlContent: html,
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to: Array.isArray(to) ? to.join(',') : to, subject, html }),
   });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Brevo ${res.status}: ${err}`);
-  }
+  if (!res.ok) throw new Error(`Webhook ${res.status}`);
   return res.json();
 }
 
@@ -215,16 +200,16 @@ function sendEntryNotification(project, entry) {
   const recipients = safeArray(project.email_recipients).filter((e) => e && e.includes('@'));
   if (!recipients.length) return;
 
-  const subject = `🏗️ [${project.name}] Yeni ${entry.entry_type} Girişi - ${entry.full_name}`;
+  const subject = `[${project.name}] Yeni ${entry.entry_type} Girişi - ${entry.full_name}`;
   const html = buildMailHtml(project, entry);
 
-  if (BREVO_API_KEY) {
-    sendViaBrevo(recipients, subject, html)
-      .then(() => console.log('✓ Mail gönderildi (Brevo)'))
-      .catch((err) => console.error('✗ Brevo mail hatası:', err.message));
+  if (MAIL_WEBHOOK_URL) {
+    sendViaWebhook(recipients, subject, html)
+      .then(() => console.log('✓ Mail gönderildi (Webhook)'))
+      .catch((err) => console.error('✗ Webhook mail hatası:', err.message));
   } else if (mailTransporter) {
     mailTransporter.sendMail({
-      from: `${MAIL_FROM_NAME} <${MAIL_FROM_EMAIL || process.env.SMTP_USER}>`, to: recipients.join(', '), subject, html,
+      from: process.env.SMTP_FROM || process.env.SMTP_USER, to: recipients.join(', '), subject, html,
     }).then(() => console.log('✓ Mail gönderildi (SMTP)'))
       .catch((err) => console.error('✗ SMTP mail hatası:', err.message));
   }
