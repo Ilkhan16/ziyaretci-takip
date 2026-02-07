@@ -149,24 +149,59 @@ function sendEntryNotification(project, entry) {
   const recipients = safeArray(project.email_recipients).filter((e) => e && e.includes('@'));
   if (!recipients.length) return;
 
-  const subject = `[${project.name}] Yeni Ziyaretçi Girişi - ${entry.full_name}`;
+  const entryDate = new Date(entry.created_at).toLocaleString('tr-TR', { dateStyle: 'long', timeStyle: 'short' });
+  const subject = `🏗️ [${project.name}] Yeni ${entry.entry_type} Girişi - ${entry.full_name}`;
   const html = `
-    <div style="font-family:sans-serif;max-width:500px;margin:0 auto;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
-      <div style="background:#6366f1;color:#fff;padding:16px 20px;">
-        <h2 style="margin:0;font-size:18px;">${project.name}</h2>
-        <p style="margin:4px 0 0;opacity:0.9;font-size:13px;">Yeni ziyaretçi girişi kaydedildi</p>
+    <div style="font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;background:#ffffff;">
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);padding:28px 24px;border-radius:12px 12px 0 0;">
+        <table style="width:100%"><tr>
+          <td style="vertical-align:middle;">
+            <div style="background:rgba(255,255,255,0.2);width:44px;height:44px;border-radius:10px;text-align:center;line-height:44px;font-size:22px;">🏗️</div>
+          </td>
+          <td style="vertical-align:middle;padding-left:14px;">
+            <h1 style="margin:0;font-size:20px;font-weight:700;color:#ffffff;">${project.name}</h1>
+            <p style="margin:4px 0 0;font-size:13px;color:rgba(255,255,255,0.85);">Yeni ${entry.entry_type.toLowerCase()} girişi kaydedildi</p>
+          </td>
+        </tr></table>
       </div>
-      <div style="padding:20px;">
-        <table style="width:100%;border-collapse:collapse;">
-          <tr><td style="padding:8px 0;color:#64748b;width:120px;">Ad Soyad</td><td style="padding:8px 0;font-weight:600;">${entry.full_name}</td></tr>
-          <tr><td style="padding:8px 0;color:#64748b;">Giriş Türü</td><td style="padding:8px 0;">${entry.entry_type}</td></tr>
-          <tr><td style="padding:8px 0;color:#64748b;">Telefon</td><td style="padding:8px 0;">${entry.phone}</td></tr>
-          <tr><td style="padding:8px 0;color:#64748b;">Ziyaret Edilen</td><td style="padding:8px 0;">${entry.visited_person}</td></tr>
-          <tr><td style="padding:8px 0;color:#64748b;">Tarih</td><td style="padding:8px 0;">${new Date(entry.created_at).toLocaleString('tr-TR')}</td></tr>
-        </table>
-      </div>
-      <div style="background:#f8fafc;padding:12px 20px;font-size:12px;color:#94a3b8;text-align:center;">
-        Bu e-posta otomatik olarak gönderilmiştir.
+
+      <!-- Body -->
+      <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;overflow:hidden;">
+        <!-- Entry type badge -->
+        <div style="padding:20px 24px 0;">
+          <span style="display:inline-block;background:${entry.entry_type === 'Ziyaretçi' ? '#dbeafe' : entry.entry_type === 'Tedarikçi' ? '#fef3c7' : '#fce7f3'};color:${entry.entry_type === 'Ziyaretçi' ? '#1e40af' : entry.entry_type === 'Tedarikçi' ? '#92400e' : '#9d174d'};font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;letter-spacing:0.3px;">${entry.entry_type.toUpperCase()}</span>
+        </div>
+
+        <!-- Info rows -->
+        <div style="padding:16px 24px 20px;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;color:#94a3b8;font-size:13px;width:110px;vertical-align:top;">👤 Ad Soyad</td>
+              <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;font-size:15px;font-weight:600;color:#1e293b;">${entry.full_name}</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;color:#94a3b8;font-size:13px;vertical-align:top;">📱 Telefon</td>
+              <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;">${entry.phone}</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;color:#94a3b8;font-size:13px;vertical-align:top;">🤝 Ziyaret Edilen</td>
+              <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;">${entry.visited_person}</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 0;color:#94a3b8;font-size:13px;vertical-align:top;">🕐 Giriş Zamanı</td>
+              <td style="padding:12px 0;font-size:14px;color:#334155;">${entryDate}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Footer -->
+        <div style="background:#f8fafc;padding:16px 24px;border-top:1px solid #e2e8f0;">
+          <table style="width:100%"><tr>
+            <td style="font-size:11px;color:#94a3b8;">Bu e-posta otomatik olarak gönderilmiştir.</td>
+            <td style="text-align:right;font-size:11px;color:#94a3b8;">Ziyaretçi Takip Sistemi</td>
+          </tr></table>
+        </div>
       </div>
     </div>
   `;
