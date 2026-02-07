@@ -7,6 +7,7 @@ const MemoryStore = require('memorystore')(session);
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const QRCode = require('qrcode');
+const nodemailer = require('nodemailer');
 
 const {
   getAdminById,
@@ -91,6 +92,95 @@ function safeArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+// ── Rate limiter (IP bazlı, memory) ──────────────────────────────
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 10 * 60 * 1000; // 10 dakika
+const RATE_LIMIT_MAX = 5; // pencere başına max form gönderimi
+
+function rateLimit(req, res, next) {
+  const ip = getClientIp(req) || 'unknown';
+  const now = Date.now();
+  if (!rateLimitMap.has(ip)) rateLimitMap.set(ip, []);
+  const timestamps = rateLimitMap.get(ip).filter((t) => now - t < RATE_LIMIT_WINDOW);
+  rateLimitMap.set(ip, timestamps);
+  if (timestamps.length >= RATE_LIMIT_MAX) {
+    return res.status(429).render('public_error', {
+      title: 'Çok fazla istek',
+      message: 'Çok fazla form gönderimi yaptınız. Lütfen 10 dakika sonra tekrar deneyin.',
+    });
+  }
+  timestamps.push(now);
+  next();
+}
+
+// Eski rate limit kayıtlarını temizle (her 15dk)
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, ts] of rateLimitMap) {
+    const valid = ts.filter((t) => now - t < RATE_LIMIT_WINDOW);
+    if (valid.length === 0) rateLimitMap.delete(ip);
+    else rateLimitMap.set(ip, valid);
+  }
+}, 15 * 60 * 1000);
+
+// ── Mail gönderimi ───────────────────────────────────────────────
+let mailTransporter = null;
+if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+  mailTransporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+  mailTransporter.verify().then(() => {
+    console.log('✓ Mail bağlantısı başarılı');
+  }).catch((err) => {
+    console.error('✗ Mail bağlantı hatası:', err.message);
+  });
+} else {
+  console.log('ℹ SMTP ayarları yapılmamış, mail gönderimi devre dışı');
+}
+
+function sendEntryNotification(project, entry) {
+  if (!mailTransporter) return;
+  const recipients = safeArray(project.email_recipients).filter((e) => e && e.includes('@'));
+  if (!recipients.length) return;
+
+  const subject = `[${project.name}] Yeni Ziyaretçi Girişi - ${entry.full_name}`;
+  const html = `
+    <div style="font-family:sans-serif;max-width:500px;margin:0 auto;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+      <div style="background:#6366f1;color:#fff;padding:16px 20px;">
+        <h2 style="margin:0;font-size:18px;">${project.name}</h2>
+        <p style="margin:4px 0 0;opacity:0.9;font-size:13px;">Yeni ziyaretçi girişi kaydedildi</p>
+      </div>
+      <div style="padding:20px;">
+        <table style="width:100%;border-collapse:collapse;">
+          <tr><td style="padding:8px 0;color:#64748b;width:120px;">Ad Soyad</td><td style="padding:8px 0;font-weight:600;">${entry.full_name}</td></tr>
+          <tr><td style="padding:8px 0;color:#64748b;">Giriş Türü</td><td style="padding:8px 0;">${entry.entry_type}</td></tr>
+          <tr><td style="padding:8px 0;color:#64748b;">Telefon</td><td style="padding:8px 0;">${entry.phone}</td></tr>
+          <tr><td style="padding:8px 0;color:#64748b;">Ziyaret Edilen</td><td style="padding:8px 0;">${entry.visited_person}</td></tr>
+          <tr><td style="padding:8px 0;color:#64748b;">Tarih</td><td style="padding:8px 0;">${new Date(entry.created_at).toLocaleString('tr-TR')}</td></tr>
+        </table>
+      </div>
+      <div style="background:#f8fafc;padding:12px 20px;font-size:12px;color:#94a3b8;text-align:center;">
+        Bu e-posta otomatik olarak gönderilmiştir.
+      </div>
+    </div>
+  `;
+
+  mailTransporter.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: recipients.join(', '),
+    subject,
+    html,
+  }).catch((err) => {
+    console.error('Mail gönderilemedi:', err.message);
+  });
+}
+
 app.get('/', (req, res) => {
   res.redirect('/admin');
 });
@@ -137,10 +227,24 @@ app.get('/p/:slug', (req, res) => {
   });
 });
 
-app.post('/p/:slug', (req, res) => {
+app.post('/p/:slug', rateLimit, (req, res) => {
   const project = getProjectBySlug(req.params.slug);
   if (!project || project.is_active !== 1) {
     return res.status(404).render('public_not_found', { title: 'Proje bulunamadı' });
+  }
+
+  // Honeypot — botlar bu gizli alanı doldurur, gerçek kullanıcılar doldurmaz
+  if (req.body._website && req.body._website.trim().length > 0) {
+    return res.render('public_success', { title: 'Kayıt alındı', project, entry: { full_name: 'Kayıt', created_at: new Date().toISOString() } });
+  }
+
+  // Zamanlama kontrolü — form 3 saniyeden kısa sürede doldurulamaz
+  const formTime = parseInt(req.body._ft || '0', 10);
+  if (formTime && (Date.now() - formTime) < 3000) {
+    return res.status(429).render('public_error', {
+      title: 'Çok hızlı',
+      message: 'Formu çok hızlı doldurdunuz. Lütfen tekrar deneyin.',
+    });
   }
 
   const authorizedPeople = safeArray(project.authorized_people);
@@ -188,6 +292,9 @@ app.post('/p/:slug', (req, res) => {
     isg_accepted: true,
     ip_address: ip,
   });
+
+  // Mail bildirimi gönder
+  sendEntryNotification(project, entry);
 
   res.render('public_success', {
     title: 'Kayıt alındı',

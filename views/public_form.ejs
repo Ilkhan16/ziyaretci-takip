@@ -33,12 +33,17 @@
     <div class="hr"></div>
   <% } %>
 
-  <form class="form" method="post" action="/p/<%= project.slug %>">
+  <form class="form" method="post" action="/p/<%= project.slug %>" id="entryForm">
+    <!-- Honeypot: botlar doldurur, gerçek kullanıcılar görmez -->
+    <div style="position:absolute;left:-9999px;top:-9999px;opacity:0;height:0;overflow:hidden;" aria-hidden="true">
+      <input type="text" name="_website" tabindex="-1" autocomplete="off" />
+    </div>
+    <input type="hidden" name="_ft" id="_ft" value="" />
 
     <div class="form-group">
       <div class="label">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/></svg>
-        Giris Turu
+        Giriş Türü
       </div>
       <select class="select" name="entry_type" id="entry_type" required>
         <option value="">-- Seciniz --</option>
@@ -183,6 +188,9 @@
       lastLookedUp = '';
     }
   });
+
+  // Zamanlama: form açılış anını kaydet (bot koruması)
+  document.getElementById('_ft').value = Date.now().toString();
 </script>
 
 <%- include('partials/layout_bottom') %>

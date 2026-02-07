@@ -1,0 +1,17 @@
+<%- include('partials/layout_top', { title }) %>
+
+<div class="card animate-in text-center" style="padding:48px 28px;margin-top:40px;max-width:520px;margin-left:auto;margin-right:auto;">
+  <div class="not-found-icon">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+  </div>
+  <h1 class="h1" style="margin-bottom:12px;"><%= title %></h1>
+  <p class="p-lg" style="max-width:380px;margin:0 auto 28px;">
+    <%= message %>
+  </p>
+  <a class="btn primary" href="javascript:history.back()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Geri Dön
+  </a>
+</div>
+
+<%- include('partials/layout_bottom') %>
