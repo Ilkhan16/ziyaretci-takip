@@ -156,7 +156,7 @@ function buildMailHtml(project, entry) {
       <div style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);padding:28px 24px;border-radius:12px 12px 0 0;">
         <table style="width:100%"><tr>
           <td style="vertical-align:middle;">
-            <div style="background:rgba(255,255,255,0.2);width:44px;height:44px;border-radius:10px;text-align:center;line-height:44px;font-size:22px;">🏗️</div>
+            <div style="background:rgba(255,255,255,0.2);width:44px;height:44px;border-radius:10px;text-align:center;line-height:44px;font-size:18px;color:#fff;font-weight:bold;">Z</div>
           </td>
           <td style="vertical-align:middle;padding-left:14px;">
             <h1 style="margin:0;font-size:20px;font-weight:700;color:#ffffff;">${project.name}</h1>
@@ -170,10 +170,10 @@ function buildMailHtml(project, entry) {
         </div>
         <div style="padding:16px 24px 20px;">
           <table style="width:100%;border-collapse:collapse;">
-            <tr><td style="padding:12px 0;border-bottom:1px solid #f1f5f9;color:#94a3b8;font-size:13px;width:110px;">👤 Ad Soyad</td><td style="padding:12px 0;border-bottom:1px solid #f1f5f9;font-size:15px;font-weight:600;color:#1e293b;">${entry.full_name}</td></tr>
-            <tr><td style="padding:12px 0;border-bottom:1px solid #f1f5f9;color:#94a3b8;font-size:13px;">📱 Telefon</td><td style="padding:12px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;">${entry.phone}</td></tr>
-            <tr><td style="padding:12px 0;border-bottom:1px solid #f1f5f9;color:#94a3b8;font-size:13px;">🤝 Ziyaret Edilen</td><td style="padding:12px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;">${entry.visited_person}</td></tr>
-            <tr><td style="padding:12px 0;color:#94a3b8;font-size:13px;">🕐 Giriş Zamanı</td><td style="padding:12px 0;font-size:14px;color:#334155;">${entryDate}</td></tr>
+            <tr><td style="padding:12px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:13px;width:110px;"><b>Ad Soyad</b></td><td style="padding:12px 0;border-bottom:1px solid #f1f5f9;font-size:15px;font-weight:600;color:#1e293b;">${entry.full_name}</td></tr>
+            <tr><td style="padding:12px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:13px;"><b>Telefon</b></td><td style="padding:12px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;">${entry.phone}</td></tr>
+            <tr><td style="padding:12px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:13px;"><b>Ziyaret Edilen</b></td><td style="padding:12px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#334155;">${entry.visited_person}</td></tr>
+            <tr><td style="padding:12px 0;color:#64748b;font-size:13px;"><b>Giriş Zamanı</b></td><td style="padding:12px 0;font-size:14px;color:#334155;">${entryDate}</td></tr>
           </table>
         </div>
         <div style="background:#f8fafc;padding:16px 24px;border-top:1px solid #e2e8f0;">

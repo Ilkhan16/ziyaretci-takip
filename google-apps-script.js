@@ -11,15 +11,19 @@ function doPost(e) {
     var html = data.html || '';
 
     if (!to) {
-      return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'to alanı boş' }))
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'to alani bos' }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    // Birden fazla alici varsa virgülle ayrilmis olabilir
+    // Birden fazla alici varsa virgulle ayrilmis olabilir
     var recipients = to.split(',').map(function(e) { return e.trim(); }).filter(function(e) { return e; });
 
     for (var i = 0; i < recipients.length; i++) {
-      GmailApp.sendEmail(recipients[i], subject, '', { htmlBody: html });
+      // UTF-8 encoding icin options
+      GmailApp.sendEmail(recipients[i], subject, '', {
+        htmlBody: html,
+        name: 'Ziyaretci Takip'
+      });
     }
 
     return ContentService.createTextOutput(JSON.stringify({ success: true, sent: recipients.length }))
