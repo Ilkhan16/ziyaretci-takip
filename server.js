@@ -124,33 +124,46 @@ setInterval(() => {
 }, 15 * 60 * 1000);
 
 // ── Mail gönderimi ───────────────────────────────────────────────
+const dns = require('dns');
 let mailTransporter = null;
 const smtpHost = (process.env.SMTP_HOST || '').trim();
 const smtpUser = (process.env.SMTP_USER || '').trim();
 const smtpPass = (process.env.SMTP_PASS || '').trim();
 console.log(`ℹ SMTP kontrol: HOST=${smtpHost ? 'var' : 'yok'}, USER=${smtpUser ? 'var' : 'yok'}, PASS=${smtpPass ? 'var' : 'yok'}`);
 
-if (smtpHost && smtpUser && smtpPass) {
+function createMailTransport(host) {
+  const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+  const smtpSecure = process.env.SMTP_SECURE === 'true';
   mailTransporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-      user: smtpUser,
-      pass: smtpPass,
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-    tls: { rejectUnauthorized: false },
+    host: host,
+    port: smtpPort,
+    secure: smtpSecure,
+    auth: { user: smtpUser, pass: smtpPass },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 15000,
+    tls: { rejectUnauthorized: false, servername: smtpHost },
     family: 4,
   });
-  console.log(`ℹ SMTP transport oluşturuldu (${smtpHost}:${process.env.SMTP_PORT || '587'}, secure=${process.env.SMTP_SECURE === 'true'})`);
+  console.log(`ℹ SMTP transport oluşturuldu (${host}:${smtpPort}, secure=${smtpSecure})`);
   mailTransporter.verify().then(() => {
     console.log('✓ Mail bağlantısı başarılı');
   }).catch((err) => {
     console.error('✗ Mail verify hatası:', err.message);
     console.log('ℹ Verify başarısız ama mail gönderimi yine de denenecek');
+  });
+}
+
+if (smtpHost && smtpUser && smtpPass) {
+  // DNS'i manuel IPv4 olarak çözümle (Railway IPv6 sorunu)
+  dns.resolve4(smtpHost, (err, addresses) => {
+    if (!err && addresses && addresses.length > 0) {
+      console.log(`ℹ ${smtpHost} -> IPv4: ${addresses[0]}`);
+      createMailTransport(addresses[0]);
+    } else {
+      console.log(`ℹ IPv4 çözümleme başarısız, hostname ile deneniyor: ${smtpHost}`);
+      createMailTransport(smtpHost);
+    }
   });
 } else {
   console.log('ℹ SMTP ayarları yapılmamış, mail gönderimi devre dışı');
