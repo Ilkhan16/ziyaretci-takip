@@ -142,6 +142,8 @@ if (smtpHost && smtpUser && smtpPass) {
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 10000,
+    tls: { rejectUnauthorized: false },
+    family: 4,
   });
   console.log('ℹ SMTP transport oluşturuldu, bağlantı test ediliyor...');
   mailTransporter.verify().then(() => {
