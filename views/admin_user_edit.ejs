@@ -69,6 +69,7 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         Rol ve Yetki
       </div>
+      <% if (admin.role !== 'customer') { %>
       <div class="form-group" style="margin-bottom:16px;">
         <div class="label">Kullanici Rolu</div>
         <select class="select" name="role" id="role_select">
@@ -77,8 +78,12 @@
         </select>
         <span class="small">Musteri rolu sadece atanan projelerin kayitlarini gorebilir</span>
       </div>
+      <% } else { %>
+      <input type="hidden" name="role" value="customer" />
+      <p class="small" style="margin-bottom:16px;">Yeni kullanici <strong>Musteri</strong> rolu ile olusturulacak.</p>
+      <% } %>
 
-      <div id="project_assignment" style="<%= values.role === 'customer' ? '' : 'display:none;' %>">
+      <div id="project_assignment" style="<%= (admin.role === 'customer' || values.role === 'customer') ? '' : 'display:none;' %>">
         <div class="label" style="margin-bottom:8px;">Atanan Projeler</div>
         <% if (typeof allProjects !== 'undefined' && allProjects.length) { %>
           <% allProjects.forEach(function(p){ %>

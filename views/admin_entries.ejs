@@ -50,6 +50,14 @@
         <option value="Taşeron" <%= filters.entry_type==='Taşeron'?'selected':'' %>>Taseron</option>
       </select>
     </div>
+    <div class="form-group">
+      <div class="label">Durum</div>
+      <select class="select" name="durum">
+        <option value="">Tumu</option>
+        <option value="icerde" <%= filters.durum==='icerde'?'selected':'' %>>Icerde</option>
+        <option value="cikti" <%= filters.durum==='cikti'?'selected':'' %>>Cikti</option>
+      </select>
+    </div>
     <button class="btn primary" type="submit">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       Filtrele
@@ -60,25 +68,35 @@
     </a>
   </form>
 
+  <% var icerdeCount = entries.filter(function(e){ return !e.exit_at; }).length; %>
+  <% if (icerdeCount > 0) { %>
+  <div class="card animate-in animate-delay-1" style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;margin-bottom:8px;border-left:3px solid var(--success);">
+    <span><strong><%= icerdeCount %></strong> kisi su an icerde</span>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <a class="btn btn-sm primary" href="/admin/entries?durum=icerde&project_id=<%= filters.project_id %>&entry_type=<%= encodeURIComponent(filters.entry_type) %>">Icerdekileri Goster</a>
+      <form method="post" action="/admin/entries/bulk-exit" style="margin:0;">
+        <button class="btn btn-sm danger" type="submit" onclick="return confirm('Tum icerdeki ziyaretcilerin cikisi yapilacak. Emin misiniz?')">Tumunu Cikar</button>
+      </form>
+    </div>
+  </div>
+  <% } %>
+
   <div class="card animate-in animate-delay-2">
     <div class="table-wrapper">
       <table class="table">
         <thead>
           <tr>
-            <th>Giris</th>
-            <th>Cikis</th>
+            <th>Ad Soyad</th>
             <th>Proje</th>
             <th>Tur</th>
-            <th>Ad Soyad</th>
-            <th>Telefon</th>
-            <th>Ziyaret Edilen</th>
+            <th>Giris</th>
             <th>Durum</th>
-            <th>Islem</th>
+            <th style="text-align:center">Islem</th>
           </tr>
         </thead>
         <tbody>
           <% if (!entries.length) { %>
-            <tr><td colspan="9" class="small" style="text-align:center;padding:32px;">Kayit bulunamadi.</td></tr>
+            <tr><td colspan="6" class="small" style="text-align:center;padding:32px;">Kayit bulunamadi.</td></tr>
           <% } %>
           <%
             function calcDuration(entry, exit) {
@@ -91,38 +109,30 @@
               var m = mins % 60;
               return h + ' sa ' + m + ' dk';
             }
+            var qs = '?project_id=' + (filters.project_id||'') + '&entry_type=' + encodeURIComponent(filters.entry_type||'') + '&durum=' + (filters.durum||'');
           %>
           <% entries.forEach(function(e){ %>
             <tr>
+              <td><strong><%= e.full_name %></strong><br/><span class="small" style="color:var(--text-muted)"><%= e.phone %></span></td>
+              <td><span class="badge badge-primary"><%= e.project_name %></span></td>
+              <td><span class="badge <%= e.entry_type==='Ziyaretçi'?'badge-success':e.entry_type==='Tedarikçi'?'badge-warning':'badge-default' %>"><%= e.entry_type %></span></td>
               <td><span class="small"><%= e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '' %></span></td>
               <td>
                 <% if (e.exit_at) { %>
-                  <span class="small"><%= new Date(e.exit_at).toLocaleString('tr-TR') %></span>
+                  <span class="badge badge-default">Cikti</span>
                   <br/><span class="small" style="color:var(--text-muted)"><%= calcDuration(e.created_at, e.exit_at) %></span>
                 <% } else { %>
                   <span class="badge badge-success">Icerde</span>
                 <% } %>
               </td>
-              <td><span class="badge badge-primary"><%= e.project_name %></span></td>
-              <td><span class="badge <%= e.entry_type==='Ziyaretçi'?'badge-success':e.entry_type==='Tedarikçi'?'badge-warning':'badge-default' %>"><%= e.entry_type %></span></td>
-              <td><strong><%= e.full_name %></strong></td>
-              <td><%= e.phone %></td>
-              <td><%= e.visited_person %></td>
-              <td>
-                <% if (e.exit_at) { %>
-                  <span class="badge badge-default">Cikti</span>
-                <% } else { %>
+              <td style="text-align:center;white-space:nowrap">
+                <% if (!e.exit_at) { %>
                   <form method="post" action="/admin/entries/<%= e.id %>/exit" style="display:inline;margin:0;">
-                    <input type="hidden" name="redirect_query" value="?project_id=<%= filters.project_id %>&entry_type=<%= encodeURIComponent(filters.entry_type) %>" />
-                    <button class="btn btn-sm danger" type="submit" title="Cikis Kaydet">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                      Cikis
-                    </button>
+                    <input type="hidden" name="redirect_query" value="<%= qs %>" />
+                    <button class="btn btn-sm danger" type="submit" title="Cikis Yap">Cikis</button>
                   </form>
                 <% } %>
-              </td>
-              <td>
-                <a class="btn btn-sm" href="/admin/entries/<%= e.id %>/print" target="_blank" title="Yazdir"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></a>
+                <a class="btn btn-sm" href="/admin/entries/<%= e.id %>/print" target="_blank" title="Kart Yazdir">Kart</a>
               </td>
             </tr>
           <% }) %>
@@ -146,34 +156,28 @@
               <span class="badge badge-success">Icerde</span>
             <% } %>
           </div>
-          <div class="entry-card-row"><span class="ecr-label">Tur</span><span class="ecr-value"><span class="badge <%= e.entry_type==='Ziyaretçi'?'badge-success':e.entry_type==='Tedarikçi'?'badge-warning':'badge-default' %>"><%= e.entry_type %></span></span></div>
           <div class="entry-card-row"><span class="ecr-label">Proje</span><span class="ecr-value"><%= e.project_name %></span></div>
+          <div class="entry-card-row"><span class="ecr-label">Tur</span><span class="ecr-value"><span class="badge <%= e.entry_type==='Ziyaretçi'?'badge-success':e.entry_type==='Tedarikçi'?'badge-warning':'badge-default' %>"><%= e.entry_type %></span></span></div>
           <div class="entry-card-row"><span class="ecr-label">Telefon</span><span class="ecr-value"><%= e.phone %></span></div>
           <div class="entry-card-row"><span class="ecr-label">Ziyaret</span><span class="ecr-value"><%= e.visited_person %></span></div>
           <div class="entry-card-row"><span class="ecr-label">Giris</span><span class="ecr-value"><%= e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '' %></span></div>
           <% if (e.exit_at) { %>
             <div class="entry-card-row"><span class="ecr-label">Cikis</span><span class="ecr-value"><%= new Date(e.exit_at).toLocaleString('tr-TR') %> (<%= calcDuration(e.created_at, e.exit_at) %>)</span></div>
           <% } %>
-          <div style="display:flex;gap:6px;margin-top:8px;">
+          <div style="display:flex;gap:6px;margin-top:10px;">
             <% if (!e.exit_at) { %>
-              <form method="post" action="/admin/entries/<%= e.id %>/exit" style="margin:0;">
-                <input type="hidden" name="redirect_query" value="?project_id=<%= filters.project_id %>&entry_type=<%= encodeURIComponent(filters.entry_type) %>" />
-                <button class="btn btn-sm danger" type="submit">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                  Cikis
-                </button>
+              <form method="post" action="/admin/entries/<%= e.id %>/exit" style="margin:0;flex:1;">
+                <input type="hidden" name="redirect_query" value="<%= qs %>" />
+                <button class="btn btn-sm danger" type="submit" style="width:100%">Cikis Yap</button>
               </form>
             <% } %>
-            <a class="btn btn-sm" href="/admin/entries/<%= e.id %>/print" target="_blank">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-              Kart
-            </a>
+            <a class="btn btn-sm" href="/admin/entries/<%= e.id %>/print" target="_blank" style="flex:1;text-align:center;">Kart Yazdir</a>
           </div>
         </div>
       <% }) %>
     </div>
 
-    <div class="footer">Son 500 kayit gosterilir.</div>
+    <div class="footer">Son 2000 kayit gosterilir.</div>
   </div>
 </div>
 

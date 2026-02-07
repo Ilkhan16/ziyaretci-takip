@@ -252,7 +252,7 @@ app.get('/admin/dashboard', requireAdmin, (req, res) => {
   const todayStr = now.toISOString().slice(0, 10);
 
   const todayEntries = entries.filter((e) => e.created_at && e.created_at.slice(0, 10) === todayStr);
-  const activeNow = entries.filter((e) => !e.exit_at && e.created_at && e.created_at.slice(0, 10) === todayStr);
+  const activeNow = entries.filter((e) => !e.exit_at);
 
   // Son 7 gun verileri
   const last7 = [];
@@ -328,18 +328,17 @@ app.post('/admin/logout', requireAdmin, (req, res) => {
 app.get('/admin/entries', requireAdmin, (req, res) => {
   let projects = listProjects({ activeOnly: false }).sort((a, b) => a.name.localeCompare(b.name));
 
-  // Customer rolü sadece kendi projelerini görsün
   if (req.admin.role === 'customer') {
     projects = projects.filter((p) => req.admin.project_ids.includes(p.id));
   }
 
   const projectId = req.query.project_id ? Number(req.query.project_id) : null;
   const entryType = req.query.entry_type ? String(req.query.entry_type) : '';
+  const durum = req.query.durum || '';
 
   const normalizedProjectId = projectId && Number.isFinite(projectId) ? projectId : null;
   const normalizedEntryType = entryType && ['Ziyaretçi', 'Tedarikçi', 'Taşeron'].includes(entryType) ? entryType : '';
 
-  // Customer belirli bir proje seçtiyse, yetkisi var mı kontrol et
   if (req.admin.role === 'customer' && normalizedProjectId && !req.admin.project_ids.includes(normalizedProjectId)) {
     return res.status(403).send('Bu projeye erişim yetkiniz yok.');
   }
@@ -347,22 +346,24 @@ app.get('/admin/entries', requireAdmin, (req, res) => {
   const rawEntries = listEntries({
     projectId: normalizedProjectId || undefined,
     entryType: normalizedEntryType || undefined,
-    limit: 500,
+    limit: 2000,
   });
 
   const projectMap = new Map(projects.map((p) => [p.id, p]));
   let entries = rawEntries.map((e) => {
     const p = projectMap.get(e.project_id) || null;
-    return {
-      ...e,
-      project_name: p ? p.name : '',
-      project_slug: p ? p.slug : '',
-    };
+    return { ...e, project_name: p ? p.name : '', project_slug: p ? p.slug : '' };
   });
 
-  // Customer rolü sadece kendi projelerinin kayıtlarını görsün
   if (req.admin.role === 'customer') {
     entries = entries.filter((e) => req.admin.project_ids.includes(e.project_id));
+  }
+
+  // Durum filtresi: icerde / cikti
+  if (durum === 'icerde') {
+    entries = entries.filter((e) => !e.exit_at);
+  } else if (durum === 'cikti') {
+    entries = entries.filter((e) => !!e.exit_at);
   }
 
   res.render('admin_entries', {
@@ -373,8 +374,20 @@ app.get('/admin/entries', requireAdmin, (req, res) => {
     filters: {
       project_id: projectId || '',
       entry_type: entryType || '',
+      durum: durum || '',
     },
   });
+});
+
+// Bulk exit — mark all active visitors as left
+app.post('/admin/entries/bulk-exit', requireAdmin, (req, res) => {
+  const allEntries = listEntries({ limit: 50000 });
+  let active = allEntries.filter((e) => !e.exit_at);
+  if (req.admin.role === 'customer') {
+    active = active.filter((e) => req.admin.project_ids.includes(e.project_id));
+  }
+  active.forEach((e) => updateEntryExit(e.id));
+  res.redirect('/admin/entries?durum=icerde');
 });
 
 // Entry exit — mark visitor as left
@@ -578,39 +591,59 @@ app.post('/admin/projects/save', requireAdmin, requireSuperAdmin, (req, res) => 
   res.redirect('/admin/projects');
 });
 
-app.get('/admin/users', requireAdmin, requireSuperAdmin, (req, res) => {
-  const users = listAdmins().map((u) => ({
+app.get('/admin/users', requireAdmin, (req, res) => {
+  let users = listAdmins().map((u) => ({
     id: u.id,
     email: u.email,
     full_name: u.full_name,
     is_active: u.is_active,
     role: u.role || 'admin',
+    project_ids: Array.isArray(u.project_ids) ? u.project_ids : [],
     created_at: u.created_at,
   }));
+  // Customer sadece kendi projeleriyle kesisen customer kullanicilari gorsun
+  if (req.admin.role === 'customer') {
+    users = users.filter((u) => u.role === 'customer' && u.project_ids.some((pid) => req.admin.project_ids.includes(pid)));
+  }
   res.render('admin_users', {
-    title: 'Admin Kullanıcıları',
+    title: 'Kullanicilar',
     admin: req.admin,
     users,
   });
 });
 
-app.get('/admin/users/new', requireAdmin, requireSuperAdmin, (req, res) => {
-  const allProjects = listProjects();
+app.get('/admin/users/new', requireAdmin, (req, res) => {
+  let allProjects = listProjects();
+  let defaultRole = 'admin';
+  if (req.admin.role === 'customer') {
+    allProjects = allProjects.filter((p) => req.admin.project_ids.includes(p.id));
+    defaultRole = 'customer';
+  }
   res.render('admin_user_edit', {
     title: 'Kullanici Ekle',
     admin: req.admin,
     error: null,
     user: null,
     allProjects,
-    values: { email: '', full_name: '', password: '', is_active: true, role: 'admin', project_ids: [] },
+    values: { email: '', full_name: '', password: '', is_active: true, role: defaultRole, project_ids: [] },
   });
 });
 
-app.get('/admin/users/:id', requireAdmin, requireSuperAdmin, (req, res) => {
+app.get('/admin/users/:id', requireAdmin, (req, res) => {
   const id = Number(req.params.id);
   const user = getAdminById(id);
   if (!user) return res.status(404).send('Not found');
-  const allProjects = listProjects();
+  // Customer baska admin'i duzenleyemez, sadece kendi projelerindeki customer'lari
+  if (req.admin.role === 'customer') {
+    const uPids = Array.isArray(user.project_ids) ? user.project_ids : [];
+    if ((user.role || 'admin') !== 'customer' || !uPids.some((pid) => req.admin.project_ids.includes(pid))) {
+      return res.status(403).send('Bu kullaniciyi duzenleme yetkiniz yok.');
+    }
+  }
+  let allProjects = listProjects();
+  if (req.admin.role === 'customer') {
+    allProjects = allProjects.filter((p) => req.admin.project_ids.includes(p.id));
+  }
   res.render('admin_user_edit', {
     title: 'Kullanici Duzenle',
     admin: req.admin,
@@ -628,7 +661,7 @@ app.get('/admin/users/:id', requireAdmin, requireSuperAdmin, (req, res) => {
   });
 });
 
-app.post('/admin/users/save', requireAdmin, requireSuperAdmin, (req, res) => {
+app.post('/admin/users/save', requireAdmin, (req, res) => {
   const id = req.body.id ? Number(req.body.id) : null;
 
   const values = {
@@ -642,6 +675,12 @@ app.post('/admin/users/save', requireAdmin, requireSuperAdmin, (req, res) => {
       : [],
   };
 
+  // Customer kisitlamalari
+  if (req.admin.role === 'customer') {
+    values.role = 'customer'; // customer sadece customer olusturabilir
+    values.project_ids = values.project_ids.filter((pid) => req.admin.project_ids.includes(pid));
+  }
+
   const error =
     !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(values.email)
       ? 'Geçerli bir e-posta giriniz.'
@@ -650,7 +689,10 @@ app.post('/admin/users/save', requireAdmin, requireSuperAdmin, (req, res) => {
         : null;
 
   if (error) {
-    const allProjects = listProjects();
+    let allProjects = listProjects();
+    if (req.admin.role === 'customer') {
+      allProjects = allProjects.filter((p) => req.admin.project_ids.includes(p.id));
+    }
     return res.status(400).render('admin_user_edit', {
       title: id ? 'Kullanici Duzenle' : 'Kullanici Ekle',
       admin: req.admin,
@@ -663,6 +705,13 @@ app.post('/admin/users/save', requireAdmin, requireSuperAdmin, (req, res) => {
 
   try {
     if (id) {
+      // Customer baska admin'i duzenleyemez
+      if (req.admin.role === 'customer') {
+        const existing = getAdminById(id);
+        if (!existing || (existing.role || 'admin') !== 'customer') {
+          return res.status(403).send('Bu kullaniciyi duzenleme yetkiniz yok.');
+        }
+      }
       const patch = {
         email: values.email,
         full_name: values.full_name || null,
