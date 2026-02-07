@@ -125,16 +125,25 @@ setInterval(() => {
 
 // ── Mail gönderimi ───────────────────────────────────────────────
 let mailTransporter = null;
-if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+const smtpHost = (process.env.SMTP_HOST || '').trim();
+const smtpUser = (process.env.SMTP_USER || '').trim();
+const smtpPass = (process.env.SMTP_PASS || '').trim();
+console.log(`ℹ SMTP kontrol: HOST=${smtpHost ? 'var' : 'yok'}, USER=${smtpUser ? 'var' : 'yok'}, PASS=${smtpPass ? 'var' : 'yok'}`);
+
+if (smtpHost && smtpUser && smtpPass) {
   mailTransporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
+    host: smtpHost,
     port: parseInt(process.env.SMTP_PORT || '587', 10),
     secure: process.env.SMTP_SECURE === 'true',
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: smtpUser,
+      pass: smtpPass,
     },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
   });
+  console.log('ℹ SMTP transport oluşturuldu, bağlantı test ediliyor...');
   mailTransporter.verify().then(() => {
     console.log('✓ Mail bağlantısı başarılı');
   }).catch((err) => {
