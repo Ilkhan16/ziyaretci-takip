@@ -145,11 +145,12 @@ if (smtpHost && smtpUser && smtpPass) {
     tls: { rejectUnauthorized: false },
     family: 4,
   });
-  console.log('ℹ SMTP transport oluşturuldu, bağlantı test ediliyor...');
+  console.log(`ℹ SMTP transport oluşturuldu (${smtpHost}:${process.env.SMTP_PORT || '587'}, secure=${process.env.SMTP_SECURE === 'true'})`);
   mailTransporter.verify().then(() => {
     console.log('✓ Mail bağlantısı başarılı');
   }).catch((err) => {
-    console.error('✗ Mail bağlantı hatası:', err.message);
+    console.error('✗ Mail verify hatası:', err.message);
+    console.log('ℹ Verify başarısız ama mail gönderimi yine de denenecek');
   });
 } else {
   console.log('ℹ SMTP ayarları yapılmamış, mail gönderimi devre dışı');
