@@ -12,37 +12,37 @@
   <div class="stats animate-in animate-delay-1">
     <div class="stat-card">
       <div class="stat-value"><%= todayCount %></div>
-      <div class="stat-label">Bugun Giris</div>
+      <div class="stat-label">Bugün Giriş</div>
     </div>
     <div class="stat-card" style="border-left:3px solid var(--success)">
       <div class="stat-value"><%= activeCount %></div>
-      <div class="stat-label">Su An Icerde</div>
+      <div class="stat-label">Şu An İçerde</div>
     </div>
     <div class="stat-card">
       <div class="stat-value"><%= totalEntries %></div>
-      <div class="stat-label">Toplam Kayit</div>
+      <div class="stat-label">Toplam Kayıt</div>
     </div>
     <div class="stat-card">
       <div class="stat-value"><%= projectCount %></div>
-      <div class="stat-label">Proje Sayisi</div>
+      <div class="stat-label">Proje Sayısı</div>
     </div>
   </div>
 
-  <div class="grid animate-in animate-delay-2" style="margin-top:16px;">
+  <div class="grid" style="margin-top:16px;">
     <div class="card">
-      <div class="h2">Son 7 Gun</div>
+      <div class="h2">Son 7 Gün</div>
       <canvas id="chart7" height="200"></canvas>
     </div>
     <div class="card">
-      <div class="h2">Giris Turu Dagilimi</div>
+      <div class="h2">Giriş Türü Dağılımı</div>
       <canvas id="chartType" height="200"></canvas>
     </div>
   </div>
 
-  <div class="card animate-in animate-delay-3" style="margin-top:16px;">
-    <div class="h2">Son Girisler</div>
+  <div class="card" style="margin-top:16px;">
+    <div class="h2">Son Girişler</div>
     <% if (!recentEntries.length) { %>
-      <p class="small" style="text-align:center;padding:20px;">Henuz kayit yok.</p>
+      <p class="small" style="text-align:center;padding:20px;">Henüz kayıt yok.</p>
     <% } else { %>
     <div class="table-wrapper">
       <table class="table">
@@ -51,7 +51,7 @@
             <th>Tarih</th>
             <th>Proje</th>
             <th>Ad Soyad</th>
-            <th>Tur</th>
+            <th>Tür</th>
             <th>Durum</th>
           </tr>
         </thead>
@@ -64,9 +64,9 @@
             <td><span class="badge <%= e.entry_type==='Ziyaretçi'?'badge-success':e.entry_type==='Tedarikçi'?'badge-warning':'badge-default' %>"><%= e.entry_type %></span></td>
             <td>
               <% if (e.exit_at) { %>
-                <span class="badge badge-default">Cikti</span>
+                <span class="badge badge-default">Çıktı</span>
               <% } else { %>
-                <span class="badge badge-success">Icerde</span>
+                <span class="badge badge-success">İçerde</span>
               <% } %>
             </td>
           </tr>
@@ -81,20 +81,20 @@
           <div class="entry-card-header">
             <strong><%= e.full_name %></strong>
             <% if (e.exit_at) { %>
-              <span class="badge badge-default">Cikti</span>
+              <span class="badge badge-default">Çıktı</span>
             <% } else { %>
-              <span class="badge badge-success">Icerde</span>
+              <span class="badge badge-success">İçerde</span>
             <% } %>
           </div>
           <div class="entry-card-row"><span class="ecr-label">Proje</span><span class="ecr-value"><%= e.project_name %></span></div>
-          <div class="entry-card-row"><span class="ecr-label">Tur</span><span class="ecr-value"><%= e.entry_type %></span></div>
+          <div class="entry-card-row"><span class="ecr-label">Tür</span><span class="ecr-value"><%= e.entry_type %></span></div>
           <div class="entry-card-row"><span class="ecr-label">Tarih</span><span class="ecr-value"><%= e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '' %></span></div>
         </div>
       <% }) %>
     </div>
     <% } %>
     <div style="text-align:center;margin-top:12px;">
-      <a class="btn btn-sm primary" href="/admin/entries">Tum Kayitlari Gor</a>
+      <a class="btn btn-sm primary" href="/admin/entries">Tüm Kayıtları Gör</a>
     </div>
   </div>
 </div>
@@ -110,7 +110,7 @@
     data: {
       labels: last7.map(function(d){ return d.label; }),
       datasets: [{
-        label: 'Giris Sayisi',
+        label: 'Giriş Sayısı',
         data: last7.map(function(d){ return d.count; }),
         backgroundColor: 'rgba(99, 102, 241, 0.7)',
         borderRadius: 6,
@@ -132,7 +132,7 @@
   new Chart(document.getElementById('chartType'), {
     type: 'doughnut',
     data: {
-      labels: ['Ziyaretci', 'Tedarikci', 'Taseron'],
+      labels: ['Ziyaretçi', 'Tedarikçi', 'Taşeron'],
       datasets: [{
         data: [typeCounts.Ziyaretci, typeCounts.Tedarikci, typeCounts.Taseron],
         backgroundColor: ['#22c55e', '#f59e0b', '#64748b'],

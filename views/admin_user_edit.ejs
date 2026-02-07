@@ -5,7 +5,7 @@
   <div class="card-header">
     <h1 class="h1" style="margin:0;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      <%= user ? 'Kullanici Duzenle' : 'Kullanici Ekle' %>
+      <%= user ? 'Kullanıcı Düzenle' : 'Kullanıcı Ekle' %>
     </h1>
     <a class="btn btn-sm" href="/admin/users">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -42,7 +42,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Ad Soyad
           </div>
-          <input class="input" name="full_name" placeholder="Adi Soyadi" value="<%= values.full_name %>" />
+          <input class="input" name="full_name" placeholder="Adı Soyadı" value="<%= values.full_name %>" />
         </div>
       </div>
 
@@ -50,37 +50,37 @@
         <div class="form-group">
           <div class="label">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Sifre <% if (user) { %><span class="label-hint">(bos birakilirsa degismez)</span><% } %>
+            Şifre <% if (user) { %><span class="label-hint">(boş bırakılırsa değişmez)</span><% } %>
           </div>
-          <input class="input" type="password" name="password" placeholder="<%= user ? 'Degistirmek icin yeni sifre girin' : 'En az 6 karakter' %>" value="" <%= user ? '' : 'required' %> />
+          <input class="input" type="password" name="password" placeholder="<%= user ? 'Değiştirmek için yeni şifre girin' : 'En az 6 karakter' %>" value="" <%= user ? '' : 'required' %> />
         </div>
         <div class="form-group">
           <div class="label">Durum</div>
           <label class="checkbox-label" style="margin-top:4px;">
             <input type="checkbox" name="is_active" <%= values.is_active?'checked':'' %> />
-            <span>Kullanici Aktif</span>
+            <span>Kullanıcı Aktif</span>
           </label>
         </div>
       </div>
     </div>
 
-    <div class="card animate-in animate-delay-2" style="margin-top:16px;">
+    <div class="card" style="margin-top:16px;">
       <div class="h2">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         Rol ve Yetki
       </div>
       <% if (admin.role !== 'customer') { %>
       <div class="form-group" style="margin-bottom:16px;">
-        <div class="label">Kullanici Rolu</div>
+        <div class="label">Kullanıcı Rolü</div>
         <select class="select" name="role" id="role_select">
           <option value="admin" <%= values.role === 'admin' ? 'selected' : '' %>>Admin (Tam Yetki)</option>
-          <option value="customer" <%= values.role === 'customer' ? 'selected' : '' %>>Musteri (Sadece Atanan Projeler)</option>
+          <option value="customer" <%= values.role === 'customer' ? 'selected' : '' %>>Müşteri (Sadece Atanan Projeler)</option>
         </select>
-        <span class="small">Musteri rolu sadece atanan projelerin kayitlarini gorebilir</span>
+        <span class="small">Müşteri rolü sadece atanan projelerin kayıtlarını görebilir</span>
       </div>
       <% } else { %>
       <input type="hidden" name="role" value="customer" />
-      <p class="small" style="margin-bottom:16px;">Yeni kullanici <strong>Musteri</strong> rolu ile olusturulacak.</p>
+      <p class="small" style="margin-bottom:16px;">Yeni kullanıcı <strong>Müşteri</strong> rolü ile oluşturulacak.</p>
       <% } %>
 
       <div id="project_assignment" style="<%= (admin.role === 'customer' || values.role === 'customer') ? '' : 'display:none;' %>">
@@ -93,7 +93,7 @@
             </label>
           <% }) %>
         <% } else { %>
-          <p class="small">Henuz proje eklenmemis. Once proje olusturun.</p>
+          <p class="small">Henüz proje eklenmemiş. Önce proje oluşturun.</p>
         <% } %>
       </div>
     </div>
@@ -101,7 +101,7 @@
     <div style="margin-top:20px;">
       <button class="btn primary btn-block" type="submit">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        Kullaniciyi Kaydet
+        Kullanıcıyı Kaydet
       </button>
     </div>
   </form>
@@ -110,9 +110,11 @@
 <script>
   var roleSelect = document.getElementById('role_select');
   var projectDiv = document.getElementById('project_assignment');
-  roleSelect.addEventListener('change', function(){
-    projectDiv.style.display = roleSelect.value === 'customer' ? '' : 'none';
-  });
+  if (roleSelect) {
+    roleSelect.addEventListener('change', function(){
+      projectDiv.style.display = roleSelect.value === 'customer' ? '' : 'none';
+    });
+  }
 </script>
 
 <%- include('partials/layout_bottom') %>

@@ -5,11 +5,11 @@
   <div class="card-header">
     <h1 class="h1" style="margin:0;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Admin Kullanicilari
+      Kullanıcılar
     </h1>
     <a class="btn primary" href="/admin/users/new">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Kullanici Ekle
+      Kullanıcı Ekle
     </a>
   </div>
 
@@ -22,25 +22,25 @@
             <th>Ad Soyad</th>
             <th>Rol</th>
             <th>Durum</th>
-            <th>Olusturma</th>
-            <th>Islem</th>
+            <th>Oluşturma</th>
+            <th>İşlem</th>
           </tr>
         </thead>
         <tbody>
           <% if (!users.length) { %>
-            <tr><td colspan="6" class="small" style="text-align:center;padding:32px;">Henuz kullanici eklenmemis.</td></tr>
+            <tr><td colspan="6" class="small" style="text-align:center;padding:32px;">Henüz kullanıcı eklenmemiş.</td></tr>
           <% } %>
           <% users.forEach(function(u){ %>
             <tr>
               <td><strong><%= u.email %></strong></td>
               <td><%= u.full_name || '-' %></td>
-              <td><span class="badge <%= u.role==='customer'?'badge-warning':'badge-primary' %>"><%= u.role==='customer' ? 'Musteri' : 'Admin' %></span></td>
+              <td><span class="badge <%= u.role==='customer'?'badge-warning':'badge-primary' %>"><%= u.role==='customer' ? 'Müşteri' : 'Admin' %></span></td>
               <td><span class="badge <%= u.is_active===1?'badge-success':'badge-danger' %>"><%= u.is_active===1 ? 'Aktif' : 'Pasif' %></span></td>
               <td><span class="small"><%= u.created_at ? new Date(u.created_at).toLocaleString('tr-TR') : '' %></span></td>
               <td>
                 <a class="btn btn-sm primary" href="/admin/users/<%= u.id %>">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                  Duzenle
+                  Düzenle
                 </a>
               </td>
             </tr>
@@ -51,7 +51,7 @@
 
     <div class="entry-cards">
       <% if (!users.length) { %>
-        <div class="text-center" style="padding:24px;"><p class="p">Henuz kullanici eklenmemis.</p></div>
+        <div class="text-center" style="padding:24px;"><p class="p">Henüz kullanıcı eklenmemiş.</p></div>
       <% } %>
       <% users.forEach(function(u){ %>
         <div class="entry-card">
@@ -60,9 +60,9 @@
             <span class="badge <%= u.is_active===1?'badge-success':'badge-danger' %>"><%= u.is_active===1 ? 'Aktif' : 'Pasif' %></span>
           </div>
           <div class="entry-card-row"><span class="ecr-label">Ad</span><span class="ecr-value"><%= u.full_name || '-' %></span></div>
-          <div class="entry-card-row"><span class="ecr-label">Rol</span><span class="ecr-value"><span class="badge <%= u.role==='customer'?'badge-warning':'badge-primary' %>"><%= u.role==='customer' ? 'Musteri' : 'Admin' %></span></span></div>
+          <div class="entry-card-row"><span class="ecr-label">Rol</span><span class="ecr-value"><span class="badge <%= u.role==='customer'?'badge-warning':'badge-primary' %>"><%= u.role==='customer' ? 'Müşteri' : 'Admin' %></span></span></div>
           <div class="entry-card-row"><span class="ecr-label">Tarih</span><span class="ecr-value"><%= u.created_at ? new Date(u.created_at).toLocaleString('tr-TR') : '' %></span></div>
-          <a class="btn btn-sm primary" href="/admin/users/<%= u.id %>" style="margin-top:8px;">Duzenle</a>
+          <a class="btn btn-sm primary" href="/admin/users/<%= u.id %>" style="margin-top:8px;">Düzenle</a>
         </div>
       <% }) %>
     </div>

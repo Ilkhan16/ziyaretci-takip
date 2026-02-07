@@ -5,29 +5,29 @@
   <div class="card-header">
     <h1 class="h1" style="margin:0;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      Giris Kayitlari
+      Giriş Kayıtları
     </h1>
   </div>
 
   <div class="stats animate-in animate-delay-1">
     <div class="stat-card">
       <div class="stat-value"><%= entries.length %></div>
-      <div class="stat-label">Toplam Sonuc</div>
+      <div class="stat-label">Toplam Sonuç</div>
     </div>
     <% var zCount = entries.filter(function(e){ return e.entry_type==='Ziyaretçi' }).length; %>
     <div class="stat-card">
       <div class="stat-value"><%= zCount %></div>
-      <div class="stat-label">Ziyaretci</div>
+      <div class="stat-label">Ziyaretçi</div>
     </div>
     <% var tCount = entries.filter(function(e){ return e.entry_type==='Tedarikçi' }).length; %>
     <div class="stat-card">
       <div class="stat-value"><%= tCount %></div>
-      <div class="stat-label">Tedarikci</div>
+      <div class="stat-label">Tedarikçi</div>
     </div>
     <% var taCount = entries.filter(function(e){ return e.entry_type==='Taşeron' }).length; %>
     <div class="stat-card">
       <div class="stat-value"><%= taCount %></div>
-      <div class="stat-label">Taseron</div>
+      <div class="stat-label">Taşeron</div>
     </div>
   </div>
 
@@ -35,27 +35,27 @@
     <div class="form-group">
       <div class="label">Proje</div>
       <select class="select" name="project_id">
-        <option value="">Tumu</option>
+        <option value="">Tümü</option>
         <% projects.forEach(function(p){ %>
           <option value="<%= p.id %>" <%= String(filters.project_id)===String(p.id)?'selected':'' %>><%= p.name %></option>
         <% }) %>
       </select>
     </div>
     <div class="form-group">
-      <div class="label">Giris Turu</div>
+      <div class="label">Giriş Türü</div>
       <select class="select" name="entry_type">
-        <option value="">Tumu</option>
-        <option value="Ziyaretçi" <%= filters.entry_type==='Ziyaretçi'?'selected':'' %>>Ziyaretci</option>
-        <option value="Tedarikçi" <%= filters.entry_type==='Tedarikçi'?'selected':'' %>>Tedarikci</option>
-        <option value="Taşeron" <%= filters.entry_type==='Taşeron'?'selected':'' %>>Taseron</option>
+        <option value="">Tümü</option>
+        <option value="Ziyaretçi" <%= filters.entry_type==='Ziyaretçi'?'selected':'' %>>Ziyaretçi</option>
+        <option value="Tedarikçi" <%= filters.entry_type==='Tedarikçi'?'selected':'' %>>Tedarikçi</option>
+        <option value="Taşeron" <%= filters.entry_type==='Taşeron'?'selected':'' %>>Taşeron</option>
       </select>
     </div>
     <div class="form-group">
       <div class="label">Durum</div>
       <select class="select" name="durum">
-        <option value="">Tumu</option>
-        <option value="icerde" <%= filters.durum==='icerde'?'selected':'' %>>Icerde</option>
-        <option value="cikti" <%= filters.durum==='cikti'?'selected':'' %>>Cikti</option>
+        <option value="">Tümü</option>
+        <option value="icerde" <%= filters.durum==='icerde'?'selected':'' %>>İçerde</option>
+        <option value="cikti" <%= filters.durum==='cikti'?'selected':'' %>>Çıktı</option>
       </select>
     </div>
     <button class="btn primary" type="submit">
@@ -71,32 +71,32 @@
   <% var icerdeCount = entries.filter(function(e){ return !e.exit_at; }).length; %>
   <% if (icerdeCount > 0) { %>
   <div class="card animate-in animate-delay-1" style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;margin-bottom:8px;border-left:3px solid var(--success);">
-    <span><strong><%= icerdeCount %></strong> kisi su an icerde</span>
+    <span><strong><%= icerdeCount %></strong> kişi şu an içerde</span>
     <div style="display:flex;gap:8px;align-items:center;">
-      <a class="btn btn-sm primary" href="/admin/entries?durum=icerde&project_id=<%= filters.project_id %>&entry_type=<%= encodeURIComponent(filters.entry_type) %>">Icerdekileri Goster</a>
+      <a class="btn btn-sm primary" href="/admin/entries?durum=icerde&project_id=<%= filters.project_id %>&entry_type=<%= encodeURIComponent(filters.entry_type) %>">İçerdekileri Göster</a>
       <form method="post" action="/admin/entries/bulk-exit" style="margin:0;">
-        <button class="btn btn-sm danger" type="submit" onclick="return confirm('Tum icerdeki ziyaretcilerin cikisi yapilacak. Emin misiniz?')">Tumunu Cikar</button>
+        <button class="btn btn-sm danger" type="submit" onclick="return confirm('Tüm içerdeki ziyaretçilerin çıkışı yapılacak. Emin misiniz?')">Tümünü Çıkar</button>
       </form>
     </div>
   </div>
   <% } %>
 
-  <div class="card animate-in animate-delay-2">
+  <div class="card">
     <div class="table-wrapper">
       <table class="table">
         <thead>
           <tr>
             <th>Ad Soyad</th>
             <th>Proje</th>
-            <th>Tur</th>
-            <th>Giris</th>
+            <th>Tür</th>
+            <th>Giriş</th>
             <th>Durum</th>
-            <th style="text-align:center">Islem</th>
+            <th style="text-align:center">İşlem</th>
           </tr>
         </thead>
         <tbody>
           <% if (!entries.length) { %>
-            <tr><td colspan="6" class="small" style="text-align:center;padding:32px;">Kayit bulunamadi.</td></tr>
+            <tr><td colspan="6" class="small" style="text-align:center;padding:32px;">Kayıt bulunamadı.</td></tr>
           <% } %>
           <%
             function calcDuration(entry, exit) {
@@ -119,20 +119,20 @@
               <td><span class="small"><%= e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '' %></span></td>
               <td>
                 <% if (e.exit_at) { %>
-                  <span class="badge badge-default">Cikti</span>
+                  <span class="badge badge-default">Çıktı</span>
                   <br/><span class="small" style="color:var(--text-muted)"><%= calcDuration(e.created_at, e.exit_at) %></span>
                 <% } else { %>
-                  <span class="badge badge-success">Icerde</span>
+                  <span class="badge badge-success">İçerde</span>
                 <% } %>
               </td>
               <td style="text-align:center;white-space:nowrap">
                 <% if (!e.exit_at) { %>
                   <form method="post" action="/admin/entries/<%= e.id %>/exit" style="display:inline;margin:0;">
                     <input type="hidden" name="redirect_query" value="<%= qs %>" />
-                    <button class="btn btn-sm danger" type="submit" title="Cikis Yap">Cikis</button>
+                    <button class="btn btn-sm danger" type="submit" title="Çıkış Yap">Çıkış</button>
                   </form>
                 <% } %>
-                <a class="btn btn-sm" href="/admin/entries/<%= e.id %>/print" target="_blank" title="Kart Yazdir">Kart</a>
+                <a class="btn btn-sm" href="/admin/entries/<%= e.id %>/print" target="_blank" title="Kart Yazdır">Kart</a>
               </td>
             </tr>
           <% }) %>
@@ -143,7 +143,7 @@
     <div class="entry-cards">
       <% if (!entries.length) { %>
         <div class="text-center" style="padding:24px;">
-          <p class="p">Kayit bulunamadi.</p>
+          <p class="p">Kayıt bulunamadı.</p>
         </div>
       <% } %>
       <% entries.forEach(function(e){ %>
@@ -151,33 +151,33 @@
           <div class="entry-card-header">
             <strong><%= e.full_name %></strong>
             <% if (e.exit_at) { %>
-              <span class="badge badge-default">Cikti</span>
+              <span class="badge badge-default">Çıktı</span>
             <% } else { %>
-              <span class="badge badge-success">Icerde</span>
+              <span class="badge badge-success">İçerde</span>
             <% } %>
           </div>
           <div class="entry-card-row"><span class="ecr-label">Proje</span><span class="ecr-value"><%= e.project_name %></span></div>
-          <div class="entry-card-row"><span class="ecr-label">Tur</span><span class="ecr-value"><span class="badge <%= e.entry_type==='Ziyaretçi'?'badge-success':e.entry_type==='Tedarikçi'?'badge-warning':'badge-default' %>"><%= e.entry_type %></span></span></div>
+          <div class="entry-card-row"><span class="ecr-label">Tür</span><span class="ecr-value"><span class="badge <%= e.entry_type==='Ziyaretçi'?'badge-success':e.entry_type==='Tedarikçi'?'badge-warning':'badge-default' %>"><%= e.entry_type %></span></span></div>
           <div class="entry-card-row"><span class="ecr-label">Telefon</span><span class="ecr-value"><%= e.phone %></span></div>
           <div class="entry-card-row"><span class="ecr-label">Ziyaret</span><span class="ecr-value"><%= e.visited_person %></span></div>
-          <div class="entry-card-row"><span class="ecr-label">Giris</span><span class="ecr-value"><%= e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '' %></span></div>
+          <div class="entry-card-row"><span class="ecr-label">Giriş</span><span class="ecr-value"><%= e.created_at ? new Date(e.created_at).toLocaleString('tr-TR') : '' %></span></div>
           <% if (e.exit_at) { %>
-            <div class="entry-card-row"><span class="ecr-label">Cikis</span><span class="ecr-value"><%= new Date(e.exit_at).toLocaleString('tr-TR') %> (<%= calcDuration(e.created_at, e.exit_at) %>)</span></div>
+            <div class="entry-card-row"><span class="ecr-label">Çıkış</span><span class="ecr-value"><%= new Date(e.exit_at).toLocaleString('tr-TR') %> (<%= calcDuration(e.created_at, e.exit_at) %>)</span></div>
           <% } %>
           <div style="display:flex;gap:6px;margin-top:10px;">
             <% if (!e.exit_at) { %>
               <form method="post" action="/admin/entries/<%= e.id %>/exit" style="margin:0;flex:1;">
                 <input type="hidden" name="redirect_query" value="<%= qs %>" />
-                <button class="btn btn-sm danger" type="submit" style="width:100%">Cikis Yap</button>
+                <button class="btn btn-sm danger" type="submit" style="width:100%">Çıkış Yap</button>
               </form>
             <% } %>
-            <a class="btn btn-sm" href="/admin/entries/<%= e.id %>/print" target="_blank" style="flex:1;text-align:center;">Kart Yazdir</a>
+            <a class="btn btn-sm" href="/admin/entries/<%= e.id %>/print" target="_blank" style="flex:1;text-align:center;">Kart Yazdır</a>
           </div>
         </div>
       <% }) %>
     </div>
 
-    <div class="footer">Son 2000 kayit gosterilir.</div>
+    <div class="footer">Son 2000 kayıt gösterilir.</div>
   </div>
 </div>
 
