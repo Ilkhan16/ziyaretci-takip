@@ -124,13 +124,14 @@ setInterval(() => {
 }, 15 * 60 * 1000);
 
 // ── Mail gönderimi ───────────────────────────────────────────────
-const RESEND_API_KEY = (process.env.RESEND_API_KEY || '').trim();
-const MAIL_FROM = (process.env.MAIL_FROM || process.env.SMTP_FROM || 'onboarding@resend.dev').trim();
+const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').trim();
+const MAIL_FROM_EMAIL = (process.env.MAIL_FROM || process.env.SMTP_FROM || '').trim();
+const MAIL_FROM_NAME = (process.env.MAIL_FROM_NAME || 'Ziyaretçi Takip').trim();
 let mailTransporter = null;
 
-// Öncelik: 1) Resend (HTTP - Railway için), 2) SMTP (localhost için)
-if (RESEND_API_KEY) {
-  console.log('✓ Resend API key bulundu, HTTP tabanlı mail aktif');
+// Öncelik: 1) Brevo HTTP API (Railway için), 2) SMTP (localhost için)
+if (BREVO_API_KEY) {
+  console.log(`✓ Brevo API key bulundu, HTTP tabanlı mail aktif (from: ${MAIL_FROM_EMAIL})`);
 } else {
   const smtpHost = (process.env.SMTP_HOST || '').trim();
   const smtpUser = (process.env.SMTP_USER || '').trim();
@@ -150,7 +151,7 @@ if (RESEND_API_KEY) {
         .catch((e) => console.error('✗ SMTP verify hatası:', e.message));
     });
   } else {
-    console.log('ℹ Mail ayarları yapılmamış (RESEND_API_KEY veya SMTP), mail gönderimi devre dışı');
+    console.log('ℹ Mail ayarları yapılmamış (BREVO_API_KEY veya SMTP), mail gönderimi devre dışı');
   }
 }
 
@@ -191,15 +192,21 @@ function buildMailHtml(project, entry) {
     </div>`;
 }
 
-async function sendViaResend(to, subject, html) {
-  const res = await fetch('https://api.resend.com/emails', {
+async function sendViaBrevo(to, subject, html) {
+  const toList = (Array.isArray(to) ? to : [to]).map((e) => ({ email: e }));
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: MAIL_FROM, to: Array.isArray(to) ? to : [to], subject, html }),
+    headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({
+      sender: { name: MAIL_FROM_NAME, email: MAIL_FROM_EMAIL },
+      to: toList,
+      subject,
+      htmlContent: html,
+    }),
   });
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Resend ${res.status}: ${err}`);
+    throw new Error(`Brevo ${res.status}: ${err}`);
   }
   return res.json();
 }
@@ -211,13 +218,13 @@ function sendEntryNotification(project, entry) {
   const subject = `🏗️ [${project.name}] Yeni ${entry.entry_type} Girişi - ${entry.full_name}`;
   const html = buildMailHtml(project, entry);
 
-  if (RESEND_API_KEY) {
-    sendViaResend(recipients, subject, html)
-      .then(() => console.log('✓ Mail gönderildi (Resend)'))
-      .catch((err) => console.error('✗ Resend mail hatası:', err.message));
+  if (BREVO_API_KEY) {
+    sendViaBrevo(recipients, subject, html)
+      .then(() => console.log('✓ Mail gönderildi (Brevo)'))
+      .catch((err) => console.error('✗ Brevo mail hatası:', err.message));
   } else if (mailTransporter) {
     mailTransporter.sendMail({
-      from: MAIL_FROM, to: recipients.join(', '), subject, html,
+      from: `${MAIL_FROM_NAME} <${MAIL_FROM_EMAIL || process.env.SMTP_USER}>`, to: recipients.join(', '), subject, html,
     }).then(() => console.log('✓ Mail gönderildi (SMTP)'))
       .catch((err) => console.error('✗ SMTP mail hatası:', err.message));
   }
