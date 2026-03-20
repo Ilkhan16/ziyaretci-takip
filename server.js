@@ -497,7 +497,7 @@ app.post('/admin/login', async (req, res, next) => {
 
     const user = await getAdminByEmail(email);
 
-    if (!user || user.is_active !== 1 || !bcrypt.compareSync(password, user.password_hash)) {
+    if (!user || !user.is_active || !bcrypt.compareSync(password, user.password_hash)) {
       return res.status(401).render('admin_login', {
         title: 'Admin Giriş',
         error: 'E-posta veya şifre hatalı.',
