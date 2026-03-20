@@ -230,53 +230,30 @@ app.get('/', (req, res) => {
   res.redirect('/admin');
 });
 
-// Geçici debug endpoint — env ve MongoDB durumunu goster
-app.get('/debug-status', async (req, res) => {
-  const uri = process.env.MONGODB_URI || '';
-  const uriPreview = uri ? uri.slice(0, 30) + '...' : '(YOK)';
-  const uriLen = uri.length;
-  const uriHasNewline = uri.includes('\n') || uri.includes('\r');
-  let dbStatus = 'baglanti denenmedi';
-  try {
-    const { getDb } = require('./db');
-    await getDb();
-    dbStatus = 'BASARILI';
-  } catch (e) {
-    dbStatus = 'HATA: ' + e.message;
-  }
-  res.send(`<pre>
-MONGODB_URI uzunluk: ${uriLen}
-MONGODB_URI onizleme: ${uriPreview}
-MONGODB_URI newline iceriyor mu: ${uriHasNewline}
-MONGODB_DB: ${process.env.MONGODB_DB || '(YOK)'}
-JWT_SECRET var mi: ${process.env.JWT_SECRET ? 'EVET' : 'HAYIR'}
-NODE_ENV: ${process.env.NODE_ENV || '(YOK)'}
-MongoDB baglanti: ${dbStatus}
-</pre>`);
-});
-
-// Tek seferlik kurulum — sadece hic admin yoksa calisir
+// Kurulum — admin yoksa olustur, varsa sifre sifirla
 app.get('/setup', async (req, res) => {
   try {
-    const admins = await listAdmins();
-    if (admins.length > 0) {
-      return res.status(403).send('Kurulum zaten tamamlanmis. Bu endpoint artik devre disi.');
-    }
     const email = (process.env.SEED_ADMIN_EMAIL || '').trim().toLowerCase();
     const password = process.env.SEED_ADMIN_PASSWORD || '';
     if (!email || !password) {
       return res.status(500).send('SEED_ADMIN_EMAIL ve SEED_ADMIN_PASSWORD env degiskenleri tanimlanmamis.');
     }
     const hash = bcrypt.hashSync(password, 10);
-    await createAdmin({
-      email,
-      password_hash: hash,
-      full_name: process.env.SEED_ADMIN_FULL_NAME || 'Admin',
-      is_active: true,
-      role: 'admin',
-      project_ids: [],
-    });
-    res.send(`<h2>Kurulum tamamlandi!</h2><p>Admin: <b>${email}</b></p><p><a href="/admin/login">Girise git</a></p>`);
+    const existing = await getAdminByEmail(email);
+    if (existing) {
+      await updateAdmin(existing.id, { password_hash: hash, is_active: true });
+      res.send(`<h2>Sifre sifirlandi!</h2><p>Admin: <b>${email}</b></p><p><a href="/admin/login">Girise git</a></p>`);
+    } else {
+      await createAdmin({
+        email,
+        password_hash: hash,
+        full_name: process.env.SEED_ADMIN_FULL_NAME || 'Admin',
+        is_active: true,
+        role: 'admin',
+        project_ids: [],
+      });
+      res.send(`<h2>Kurulum tamamlandi!</h2><p>Admin: <b>${email}</b></p><p><a href="/admin/login">Girise git</a></p>`);
+    }
   } catch (err) {
     res.status(500).send(`<h2>Hata</h2><pre>${err.stack || err.message}</pre>`);
   }
