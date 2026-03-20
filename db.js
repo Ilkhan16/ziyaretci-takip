@@ -1,80 +1,73 @@
-const fs = require('fs');
-const path = require('path');
+const { MongoClient } = require('mongodb');
 
-const DATA_DIR = process.env.DATA_DIR || __dirname;
-if (DATA_DIR !== __dirname && !fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+const MONGODB_URI = process.env.MONGODB_URI;
+const DB_NAME = process.env.MONGODB_DB || 'ziyaretci_takip';
+
+let _client = null;
+
+async function getDb() {
+  if (_client) {
+    try {
+      await _client.db('admin').command({ ping: 1 });
+    } catch {
+      _client = null;
+    }
+  }
+  if (!_client) {
+    if (!MONGODB_URI) throw new Error('MONGODB_URI ortam degiskeni tanimlanmamis.');
+    _client = new MongoClient(MONGODB_URI, { maxPoolSize: 10, serverSelectionTimeoutMS: 5000 });
+    await _client.connect();
+  }
+  return _client.db(DB_NAME);
 }
-const dataPath = path.join(DATA_DIR, 'data.json');
 
 function nowIso() {
   return new Date().toISOString();
-}
-
-function ensureDataShape(data) {
-  const shaped = data && typeof data === 'object' ? data : {};
-  if (!Array.isArray(shaped.admin_users)) shaped.admin_users = [];
-  if (!Array.isArray(shaped.projects)) shaped.projects = [];
-  if (!Array.isArray(shaped.entries)) shaped.entries = [];
-  if (!shaped.counters || typeof shaped.counters !== 'object') shaped.counters = {};
-  if (typeof shaped.counters.admin_users !== 'number') shaped.counters.admin_users = 0;
-  if (typeof shaped.counters.projects !== 'number') shaped.counters.projects = 0;
-  if (typeof shaped.counters.entries !== 'number') shaped.counters.entries = 0;
-  return shaped;
-}
-
-function load() {
-  if (!fs.existsSync(dataPath)) {
-    return ensureDataShape(null);
-  }
-  const raw = fs.readFileSync(dataPath, 'utf8');
-  if (!raw.trim()) return ensureDataShape(null);
-  return ensureDataShape(JSON.parse(raw));
-}
-
-function save(data) {
-  const shaped = ensureDataShape(data);
-  const tmp = `${dataPath}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(shaped, null, 2), 'utf8');
-  fs.renameSync(tmp, dataPath);
-}
-
-function nextId(data, key) {
-  data.counters[key] += 1;
-  return data.counters[key];
 }
 
 function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
 }
 
-// Admin Users
-function getAdminById(id) {
-  const data = load();
-  return data.admin_users.find((u) => u.id === id) || null;
+async function nextId(db, key) {
+  const result = await db.collection('counters').findOneAndUpdate(
+    { _id: key },
+    { $inc: { seq: 1 } },
+    { upsert: true, returnDocument: 'after' }
+  );
+  return result.seq;
 }
 
-function getAdminByEmail(email) {
-  const data = load();
+// ── Admin Users ──────────────────────────────────────────────────
+
+async function getAdminById(id) {
+  const db = await getDb();
+  return (await db.collection('admin_users').findOne({ id })) || null;
+}
+
+async function getAdminByEmail(email) {
+  const db = await getDb();
   const norm = normalizeEmail(email);
-  return data.admin_users.find((u) => normalizeEmail(u.email) === norm) || null;
+  return (await db.collection('admin_users').findOne({ email: norm })) || null;
 }
 
-function listAdmins() {
-  const data = load();
-  return [...data.admin_users].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+async function listAdmins() {
+  const db = await getDb();
+  return db.collection('admin_users').find({}).sort({ created_at: -1 }).toArray();
 }
 
-function createAdmin({ email, password_hash, full_name, is_active, role, project_ids }) {
-  const data = load();
+async function createAdmin({ email, password_hash, full_name, is_active, role, project_ids }) {
+  const db = await getDb();
   const norm = normalizeEmail(email);
-  if (data.admin_users.some((u) => normalizeEmail(u.email) === norm)) {
+  const existing = await db.collection('admin_users').findOne({ email: norm });
+  if (existing) {
     const err = new Error('UNIQUE: admin email');
     err.code = 'UNIQUE';
     throw err;
   }
+  const id = await nextId(db, 'admin_users');
   const user = {
-    id: nextId(data, 'admin_users'),
+    id,
     email: norm,
     password_hash,
     full_name: full_name || null,
@@ -83,79 +76,76 @@ function createAdmin({ email, password_hash, full_name, is_active, role, project
     project_ids: Array.isArray(project_ids) ? project_ids : [],
     created_at: nowIso(),
   };
-  data.admin_users.push(user);
-  save(data);
+  await db.collection('admin_users').insertOne(user);
   return user;
 }
 
-function updateAdmin(id, patch) {
-  const data = load();
-  const idx = data.admin_users.findIndex((u) => u.id === id);
-  if (idx === -1) return null;
+async function updateAdmin(id, patch) {
+  const db = await getDb();
+  const user = await db.collection('admin_users').findOne({ id });
+  if (!user) return null;
+
+  const update = {};
 
   if (patch.email) {
     const norm = normalizeEmail(patch.email);
-    if (data.admin_users.some((u) => u.id !== id && normalizeEmail(u.email) === norm)) {
+    const conflict = await db.collection('admin_users').findOne({ email: norm, id: { $ne: id } });
+    if (conflict) {
       const err = new Error('UNIQUE: admin email');
       err.code = 'UNIQUE';
       throw err;
     }
-    data.admin_users[idx].email = norm;
+    update.email = norm;
   }
-
-  if (typeof patch.full_name !== 'undefined') {
-    data.admin_users[idx].full_name = patch.full_name || null;
-  }
-  if (typeof patch.is_active !== 'undefined') {
-    data.admin_users[idx].is_active = patch.is_active ? 1 : 0;
-  }
-  if (patch.password_hash) {
-    data.admin_users[idx].password_hash = patch.password_hash;
-  }
-  if (typeof patch.role !== 'undefined') {
-    data.admin_users[idx].role = patch.role || 'admin';
-  }
+  if (typeof patch.full_name !== 'undefined') update.full_name = patch.full_name || null;
+  if (typeof patch.is_active !== 'undefined') update.is_active = patch.is_active ? 1 : 0;
+  if (patch.password_hash) update.password_hash = patch.password_hash;
+  if (typeof patch.role !== 'undefined') update.role = patch.role || 'admin';
   if (typeof patch.project_ids !== 'undefined') {
-    data.admin_users[idx].project_ids = Array.isArray(patch.project_ids) ? patch.project_ids : [];
+    update.project_ids = Array.isArray(patch.project_ids) ? patch.project_ids : [];
   }
 
-  save(data);
-  return data.admin_users[idx];
+  await db.collection('admin_users').updateOne({ id }, { $set: update });
+  return { ...user, ...update };
 }
 
-// Projects
-function getProjectBySlug(slug) {
-  const data = load();
+// ── Projects ─────────────────────────────────────────────────────
+
+async function getProjectBySlug(slug) {
+  const db = await getDb();
   const s = String(slug || '').trim();
-  return data.projects.find((p) => p.slug === s) || null;
+  return (await db.collection('projects').findOne({ slug: s })) || null;
 }
 
-function getProjectById(id) {
-  const data = load();
-  return data.projects.find((p) => p.id === id) || null;
+async function getProjectById(id) {
+  const db = await getDb();
+  return (await db.collection('projects').findOne({ id })) || null;
 }
 
-function listProjects({ activeOnly } = {}) {
-  const data = load();
-  const items = activeOnly ? data.projects.filter((p) => p.is_active === 1) : data.projects;
-  return [...items].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+async function listProjects({ activeOnly } = {}) {
+  const db = await getDb();
+  const filter = activeOnly ? { is_active: 1 } : {};
+  return db.collection('projects').find(filter).sort({ created_at: -1 }).toArray();
 }
 
-function saveProject(project) {
-  const data = load();
+async function saveProject(project) {
+  const db = await getDb();
   const slug = String(project.slug || '').trim();
   if (!slug) throw new Error('Slug required');
 
-  const existingIdx = project.id ? data.projects.findIndex((p) => p.id === project.id) : -1;
-  const slugTaken = data.projects.some((p) => p.slug === slug && (existingIdx === -1 || p.id !== project.id));
-  if (slugTaken) {
+  const slugConflict = await db.collection('projects').findOne(
+    project.id ? { slug, id: { $ne: project.id } } : { slug }
+  );
+  if (slugConflict) {
     const err = new Error('UNIQUE: project slug');
     err.code = 'UNIQUE';
     throw err;
   }
 
+  const existing = project.id ? await db.collection('projects').findOne({ id: project.id }) : null;
+
   const payload = {
-    id: existingIdx === -1 ? nextId(data, 'projects') : data.projects[existingIdx].id,
+    id: existing ? existing.id : await nextId(db, 'projects'),
     name: String(project.name || '').trim(),
     slug,
     is_active: project.is_active ? 1 : 0,
@@ -164,21 +154,24 @@ function saveProject(project) {
     isg_text_taseron: String(project.isg_text_taseron || ''),
     authorized_people: Array.isArray(project.authorized_people) ? project.authorized_people : [],
     email_recipients: Array.isArray(project.email_recipients) ? project.email_recipients : [],
-    created_at: existingIdx === -1 ? nowIso() : data.projects[existingIdx].created_at,
+    created_at: existing ? existing.created_at : nowIso(),
   };
 
-  if (existingIdx === -1) data.projects.push(payload);
-  else data.projects[existingIdx] = payload;
-
-  save(data);
+  if (existing) {
+    await db.collection('projects').replaceOne({ id: payload.id }, payload);
+  } else {
+    await db.collection('projects').insertOne(payload);
+  }
   return payload;
 }
 
-// Entries
-function createEntry(entry) {
-  const data = load();
+// ── Entries ──────────────────────────────────────────────────────
+
+async function createEntry(entry) {
+  const db = await getDb();
+  const id = await nextId(db, 'entries');
   const payload = {
-    id: nextId(data, 'entries'),
+    id,
     project_id: entry.project_id,
     entry_type: entry.entry_type,
     tc_kimlik_no: entry.tc_kimlik_no,
@@ -190,45 +183,45 @@ function createEntry(entry) {
     ip_address: entry.ip_address || null,
     created_at: nowIso(),
   };
-  data.entries.push(payload);
-  save(data);
+  await db.collection('entries').insertOne(payload);
   return payload;
 }
 
-function listEntries({ projectId, entryType, limit } = {}) {
-  const data = load();
-  let items = data.entries;
-  if (projectId) items = items.filter((e) => e.project_id === projectId);
-  if (entryType) items = items.filter((e) => e.entry_type === entryType);
-  items = [...items].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-  if (limit && Number.isFinite(limit)) items = items.slice(0, limit);
-  return items;
+async function listEntries({ projectId, entryType, limit } = {}) {
+  const db = await getDb();
+  const filter = {};
+  if (projectId) filter.project_id = projectId;
+  if (entryType) filter.entry_type = entryType;
+  let cursor = db.collection('entries').find(filter).sort({ created_at: -1 });
+  if (limit && Number.isFinite(limit)) cursor = cursor.limit(limit);
+  return cursor.toArray();
 }
 
-function getEntryById(id) {
-  const data = load();
-  return data.entries.find((e) => e.id === id) || null;
+async function getEntryById(id) {
+  const db = await getDb();
+  return (await db.collection('entries').findOne({ id })) || null;
 }
 
-function updateEntryExit(id) {
-  const data = load();
-  const idx = data.entries.findIndex((e) => e.id === id);
-  if (idx === -1) return null;
-  data.entries[idx].exit_at = nowIso();
-  save(data);
-  return data.entries[idx];
+async function updateEntryExit(id) {
+  const db = await getDb();
+  const exit_at = nowIso();
+  await db.collection('entries').updateOne({ id }, { $set: { exit_at } });
+  return db.collection('entries').findOne({ id });
 }
 
-function getLastEntryByTc(tc) {
-  const data = load();
-  const matches = data.entries
-    .filter((e) => e.tc_kimlik_no === tc)
-    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-  return matches.length > 0 ? matches[0] : null;
+async function getLastEntryByTc(tc) {
+  const db = await getDb();
+  const entries = await db.collection('entries')
+    .find({ tc_kimlik_no: tc })
+    .sort({ created_at: -1 })
+    .limit(1)
+    .toArray();
+  return entries.length > 0 ? entries[0] : null;
 }
 
 module.exports = {
   nowIso,
+  getDb,
   // admins
   getAdminById,
   getAdminByEmail,
