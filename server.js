@@ -259,7 +259,7 @@ role: ${user.role}
 app.get('/setup', async (req, res) => {
   try {
     const email = (process.env.SEED_ADMIN_EMAIL || '').trim().toLowerCase();
-    const password = process.env.SEED_ADMIN_PASSWORD || '';
+    const password = (process.env.SEED_ADMIN_PASSWORD || '').trim();
     if (!email || !password) {
       return res.status(500).send('SEED_ADMIN_EMAIL ve SEED_ADMIN_PASSWORD env degiskenleri tanimlanmamis.');
     }
