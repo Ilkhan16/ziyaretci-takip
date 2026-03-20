@@ -230,8 +230,33 @@ app.get('/', (req, res) => {
   res.redirect('/admin');
 });
 
+// Geçici debug endpoint — env ve MongoDB durumunu goster
+app.get('/debug-status', async (req, res) => {
+  const uri = process.env.MONGODB_URI || '';
+  const uriPreview = uri ? uri.slice(0, 30) + '...' : '(YOK)';
+  const uriLen = uri.length;
+  const uriHasNewline = uri.includes('\n') || uri.includes('\r');
+  let dbStatus = 'baglanti denenmedi';
+  try {
+    const { getDb } = require('./db');
+    await getDb();
+    dbStatus = 'BASARILI';
+  } catch (e) {
+    dbStatus = 'HATA: ' + e.message;
+  }
+  res.send(`<pre>
+MONGODB_URI uzunluk: ${uriLen}
+MONGODB_URI onizleme: ${uriPreview}
+MONGODB_URI newline iceriyor mu: ${uriHasNewline}
+MONGODB_DB: ${process.env.MONGODB_DB || '(YOK)'}
+JWT_SECRET var mi: ${process.env.JWT_SECRET ? 'EVET' : 'HAYIR'}
+NODE_ENV: ${process.env.NODE_ENV || '(YOK)'}
+MongoDB baglanti: ${dbStatus}
+</pre>`);
+});
+
 // Tek seferlik kurulum — sadece hic admin yoksa calisir
-app.get('/setup', async (req, res, next) => {
+app.get('/setup', async (req, res) => {
   try {
     const admins = await listAdmins();
     if (admins.length > 0) {
@@ -252,7 +277,9 @@ app.get('/setup', async (req, res, next) => {
       project_ids: [],
     });
     res.send(`<h2>Kurulum tamamlandi!</h2><p>Admin: <b>${email}</b></p><p><a href="/admin/login">Girise git</a></p>`);
-  } catch (err) { next(err); }
+  } catch (err) {
+    res.status(500).send(`<h2>Hata</h2><pre>${err.stack || err.message}</pre>`);
+  }
 });
 
 // TC lookup API — returns last entry info for auto-fill

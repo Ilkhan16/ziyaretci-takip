@@ -3,3 +3,6 @@ node_modules/
 data.json
 *.sqlite
 sessions/
+
+.vercel
+.env*.local
