@@ -522,10 +522,21 @@ app.post('/admin/login', async (req, res, next) => {
 
     const user = await getAdminByEmail(email);
 
+    // Gecici debug — login hatasi nerede
+    const checks = {
+      userFound: !!user,
+      isActive: user ? user.is_active : null,
+      isActiveTruthy: user ? !!user.is_active : false,
+      bcryptMatch: user && user.password_hash ? bcrypt.compareSync(password, user.password_hash) : false,
+      emailInput: email,
+      passwordLen: password.length,
+    };
+    console.log('LOGIN DEBUG:', JSON.stringify(checks));
+
     if (!user || !user.is_active || !bcrypt.compareSync(password, user.password_hash)) {
       return res.status(401).render('admin_login', {
         title: 'Admin Giriş',
-        error: 'E-posta veya şifre hatalı.',
+        error: `E-posta veya şifre hatalı. [debug: found=${checks.userFound}, active=${checks.isActiveTruthy}, bcrypt=${checks.bcryptMatch}, pwLen=${checks.passwordLen}]`,
         values: { email },
       });
     }
