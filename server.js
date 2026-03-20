@@ -230,6 +230,31 @@ app.get('/', (req, res) => {
   res.redirect('/admin');
 });
 
+// Gecici debug — login sorununu teshis et
+app.get('/debug-login', async (req, res) => {
+  try {
+    const email = (process.env.SEED_ADMIN_EMAIL || '').trim().toLowerCase();
+    const password = process.env.SEED_ADMIN_PASSWORD || '';
+    const user = await getAdminByEmail(email);
+    if (!user) {
+      return res.send(`<pre>Admin bulunamadi: ${email}\nDB'de kayit yok. Once /setup'a git.</pre>`);
+    }
+    const hashOk = bcrypt.compareSync(password, user.password_hash);
+    res.send(`<pre>
+email: ${user.email}
+id: ${user.id} (type: ${typeof user.id})
+is_active: ${user.is_active} (type: ${typeof user.is_active})
+!is_active: ${!user.is_active}
+password_hash ilk 20: ${(user.password_hash || '').slice(0, 20)}...
+SEED password: ${password}
+bcrypt match: ${hashOk}
+role: ${user.role}
+</pre>`);
+  } catch (err) {
+    res.status(500).send(`<pre>HATA: ${err.stack}</pre>`);
+  }
+});
+
 // Kurulum — admin yoksa olustur, varsa sifre sifirla
 app.get('/setup', async (req, res) => {
   try {
