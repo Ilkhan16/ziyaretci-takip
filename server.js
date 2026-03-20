@@ -526,6 +526,9 @@ app.get('/admin/entries', requireAdmin, async (req, res, next) => {
     const projectId = req.query.project_id ? Number(req.query.project_id) : null;
     const entryType = req.query.entry_type ? String(req.query.entry_type) : '';
     const durum = req.query.durum || '';
+    const search = (req.query.search || '').trim().toLowerCase();
+    const dateFrom = (req.query.date_from || '').trim();
+    const dateTo = (req.query.date_to || '').trim();
 
     const normalizedProjectId = projectId && Number.isFinite(projectId) ? projectId : null;
     const normalizedEntryType = entryType && ['Ziyaretçi', 'Tedarikçi', 'Taşeron'].includes(entryType) ? entryType : '';
@@ -550,11 +553,29 @@ app.get('/admin/entries', requireAdmin, async (req, res, next) => {
       entries = entries.filter((e) => req.admin.project_ids.includes(e.project_id));
     }
 
-    // Durum filtresi: icerde / cikti
+    // Durum filtresi
     if (durum === 'icerde') {
       entries = entries.filter((e) => !e.exit_at);
     } else if (durum === 'cikti') {
       entries = entries.filter((e) => !!e.exit_at);
+    }
+
+    // Arama filtresi (isim, TC, telefon, ziyaret edilen)
+    if (search) {
+      entries = entries.filter((e) =>
+        (e.full_name || '').toLowerCase().includes(search) ||
+        (e.tc_kimlik_no || '').includes(search) ||
+        (e.phone || '').includes(search) ||
+        (e.visited_person || '').toLowerCase().includes(search)
+      );
+    }
+
+    // Tarih filtresi
+    if (dateFrom) {
+      entries = entries.filter((e) => e.created_at && e.created_at.slice(0, 10) >= dateFrom);
+    }
+    if (dateTo) {
+      entries = entries.filter((e) => e.created_at && e.created_at.slice(0, 10) <= dateTo);
     }
 
     res.render('admin_entries', {
@@ -566,6 +587,9 @@ app.get('/admin/entries', requireAdmin, async (req, res, next) => {
         project_id: projectId || '',
         entry_type: entryType || '',
         durum: durum || '',
+        search: search || '',
+        date_from: dateFrom || '',
+        date_to: dateTo || '',
       },
     });
   } catch (err) { next(err); }
@@ -962,6 +986,51 @@ app.post('/admin/users/save', requireAdmin, async (req, res, next) => {
     }
 
     res.redirect('/admin/users');
+  } catch (err) { next(err); }
+});
+
+// Sifre degistirme
+app.get('/admin/change-password', requireAdmin, (req, res) => {
+  res.render('admin_change_password', {
+    title: 'Şifre Değiştir',
+    admin: req.admin,
+    error: null,
+    success: null,
+  });
+});
+
+app.post('/admin/change-password', requireAdmin, async (req, res, next) => {
+  try {
+    const currentPassword = req.body.current_password || '';
+    const newPassword = req.body.new_password || '';
+    const confirmPassword = req.body.confirm_password || '';
+
+    const user = await getAdminById(req.admin.id);
+    if (!user || !bcrypt.compareSync(currentPassword, user.password_hash)) {
+      return res.status(400).render('admin_change_password', {
+        title: 'Şifre Değiştir', admin: req.admin,
+        error: 'Mevcut şifre hatalı.', success: null,
+      });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).render('admin_change_password', {
+        title: 'Şifre Değiştir', admin: req.admin,
+        error: 'Yeni şifre en az 6 karakter olmalıdır.', success: null,
+      });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).render('admin_change_password', {
+        title: 'Şifre Değiştir', admin: req.admin,
+        error: 'Yeni şifreler eşleşmiyor.', success: null,
+      });
+    }
+
+    await updateAdmin(req.admin.id, { password_hash: bcrypt.hashSync(newPassword, 10) });
+    setAuthCookie(res, req.admin.id);
+    res.render('admin_change_password', {
+      title: 'Şifre Değiştir', admin: req.admin,
+      error: null, success: 'Şifreniz başarıyla değiştirildi.',
+    });
   } catch (err) { next(err); }
 });
 
