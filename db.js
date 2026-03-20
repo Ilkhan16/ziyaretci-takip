@@ -15,7 +15,7 @@ async function getDb() {
   }
   if (!_client) {
     if (!MONGODB_URI) throw new Error('MONGODB_URI ortam degiskeni tanimlanmamis.');
-    _client = new MongoClient(MONGODB_URI, { maxPoolSize: 10, serverSelectionTimeoutMS: 5000 });
+    _client = new MongoClient(MONGODB_URI, { maxPoolSize: 10, serverSelectionTimeoutMS: 10000, connectTimeoutMS: 10000 });
     await _client.connect();
   }
   return _client.db(DB_NAME);
