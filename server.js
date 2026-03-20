@@ -523,20 +523,23 @@ app.post('/admin/login', async (req, res, next) => {
     const user = await getAdminByEmail(email);
 
     // Gecici debug — login hatasi nerede
+    const seedPw = process.env.SEED_ADMIN_PASSWORD || '';
+    const pwMatch = password === seedPw;
     const checks = {
       userFound: !!user,
-      isActive: user ? user.is_active : null,
-      isActiveTruthy: user ? !!user.is_active : false,
+      isActive: user ? !!user.is_active : false,
       bcryptMatch: user && user.password_hash ? bcrypt.compareSync(password, user.password_hash) : false,
-      emailInput: email,
-      passwordLen: password.length,
+      pwLen: password.length,
+      seedLen: seedPw.length,
+      pwSame: pwMatch,
+      pwHex: Buffer.from(password).toString('hex'),
+      seedHex: Buffer.from(seedPw).toString('hex'),
     };
-    console.log('LOGIN DEBUG:', JSON.stringify(checks));
 
     if (!user || !user.is_active || !bcrypt.compareSync(password, user.password_hash)) {
       return res.status(401).render('admin_login', {
         title: 'Admin Giriş',
-        error: `E-posta veya şifre hatalı. [debug: found=${checks.userFound}, active=${checks.isActiveTruthy}, bcrypt=${checks.bcryptMatch}, pwLen=${checks.passwordLen}]`,
+        error: `Hata. [found=${checks.userFound} active=${checks.isActive} bcrypt=${checks.bcryptMatch} pwLen=${checks.pwLen} seedLen=${checks.seedLen} same=${checks.pwSame} pwHex=${checks.pwHex} seedHex=${checks.seedHex}]`,
         values: { email },
       });
     }
