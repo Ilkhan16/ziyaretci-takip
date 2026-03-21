@@ -240,35 +240,6 @@ app.get('/', (req, res) => {
   res.redirect('/admin');
 });
 
-// Kurulum — admin yoksa olustur, varsa sifre sifirla
-app.get('/setup', async (req, res) => {
-  try {
-    const email = (process.env.SEED_ADMIN_EMAIL || '').trim().toLowerCase();
-    const password = (process.env.SEED_ADMIN_PASSWORD || '').trim();
-    if (!email || !password) {
-      return res.status(500).send('SEED_ADMIN_EMAIL ve SEED_ADMIN_PASSWORD env degiskenleri tanimlanmamis.');
-    }
-    const hash = bcrypt.hashSync(password, 10);
-    const existing = await getAdminByEmail(email);
-    if (existing) {
-      await updateAdmin(existing.id, { password_hash: hash, is_active: true });
-      res.send(`<h2>Sifre sifirlandi!</h2><p>Admin: <b>${email}</b></p><p><a href="/admin/login">Girise git</a></p>`);
-    } else {
-      await createAdmin({
-        email,
-        password_hash: hash,
-        full_name: process.env.SEED_ADMIN_FULL_NAME || 'Admin',
-        is_active: true,
-        role: 'admin',
-        project_ids: [],
-      });
-      res.send(`<h2>Kurulum tamamlandi!</h2><p>Admin: <b>${email}</b></p><p><a href="/admin/login">Girise git</a></p>`);
-    }
-  } catch (err) {
-    res.status(500).send(`<h2>Hata</h2><pre>${err.stack || err.message}</pre>`);
-  }
-});
-
 // TC lookup API — returns last entry info for auto-fill
 app.get('/api/tc-lookup/:tc', async (req, res, next) => {
   try {

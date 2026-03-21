@@ -29,15 +29,12 @@
 
     <div class="card animate-in animate-delay-1">
       <div class="h2">Proje Bilgileri</div>
-      <div class="grid" style="margin-bottom:16px;">
-        <div class="form-group">
-          <div class="label">Proje Adi</div>
-          <input class="input" name="name" id="proj_name" placeholder="Ornek: Metro Osmangazi" value="<%= values.name %>" required />
-        </div>
-        <div class="form-group">
-          <div class="label">Slug (URL) <span class="label-hint">otomatik olusturulur</span></div>
-          <input class="input" name="slug" id="proj_slug" placeholder="otomatik-olusturulur" value="<%= values.slug %>" />
-          <span class="small" id="slug_preview">Form adresi: /p/<span id="slug_val"><%= values.slug || '...' %></span></span>
+      <div class="form-group" style="margin-bottom:16px;">
+        <div class="label">Proje Adi</div>
+        <input class="input" name="name" id="proj_name" placeholder="Ornek: Metro Osmangazi" value="<%= values.name %>" required />
+        <input type="hidden" name="slug" id="proj_slug" value="<%= values.slug %>" />
+        <div style="margin-top:8px;padding:10px 16px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border);">
+          <span class="small">Form adresi: <strong style="color:var(--primary)">/p/<span id="slug_val"><%= values.slug || '...' %></span></strong></span>
         </div>
       </div>
       <label class="checkbox-inline">
@@ -96,22 +93,19 @@
 </div>
 
 <script>
-(function(){
-  var trMap = {'ç':'c','ğ':'g','ı':'i','ö':'o','ş':'s','ü':'u','Ç':'c','Ğ':'g','İ':'i','Ö':'o','Ş':'s','Ü':'u'};
-  function slugify(t){
-    return (t||'').replace(/[çğışöüÇĞİŞÖÜ]/g,function(c){return trMap[c]||c})
-      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-      .toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50);
-  }
-  var nameEl=document.getElementById('proj_name');
-  var slugEl=document.getElementById('proj_slug');
-  var valEl=document.getElementById('slug_val');
-  var manualEdit=false;
-  if(slugEl.value) manualEdit=true;
-  slugEl.addEventListener('input',function(){ manualEdit=!!slugEl.value.trim(); if(valEl) valEl.textContent=slugEl.value||'...'; });
-  nameEl.addEventListener('input',function(){
-    if(!manualEdit){ var s=slugify(nameEl.value); slugEl.value=s; if(valEl) valEl.textContent=s||'...'; }
-  });
-})();
+var trMap={'ç':'c','ğ':'g','ı':'i','ö':'o','ş':'s','ü':'u','Ç':'c','Ğ':'g','İ':'i','Ö':'o','Ş':'s','Ü':'u'};
+function slugify(t){
+  return(t||'').replace(/[çğışöüÇĞİŞÖÜ]/g,function(c){return trMap[c]||c})
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50);
+}
+var nameEl=document.getElementById('proj_name');
+var slugEl=document.getElementById('proj_slug');
+var valEl=document.getElementById('slug_val');
+nameEl.addEventListener('input',function(){
+  var s=slugify(nameEl.value);
+  slugEl.value=s;
+  valEl.textContent=s||'...';
+});
 </script>
 <%- include('partials/layout_bottom') %>
