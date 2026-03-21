@@ -113,6 +113,16 @@ function safeArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+function slugify(text) {
+  const map = { 'ç':'c','ğ':'g','ı':'i','ö':'o','ş':'s','ü':'u','Ç':'c','Ğ':'g','İ':'i','Ö':'o','Ş':'s','Ü':'u' };
+  return String(text || '').replace(/[çğışöüÇĞİŞÖÜ]/g, c => map[c] || c)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 50);
+}
+
 // ── Rate limiter (IP bazlı, memory — best-effort in serverless) ───
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 10 * 60 * 1000; // 10 dakika
@@ -228,31 +238,6 @@ function sendEntryNotification(project, entry) {
 
 app.get('/', (req, res) => {
   res.redirect('/admin');
-});
-
-// Gecici debug — login sorununu teshis et
-app.get('/debug-login', async (req, res) => {
-  try {
-    const email = (process.env.SEED_ADMIN_EMAIL || '').trim().toLowerCase();
-    const password = process.env.SEED_ADMIN_PASSWORD || '';
-    const user = await getAdminByEmail(email);
-    if (!user) {
-      return res.send(`<pre>Admin bulunamadi: ${email}\nDB'de kayit yok. Once /setup'a git.</pre>`);
-    }
-    const hashOk = bcrypt.compareSync(password, user.password_hash);
-    res.send(`<pre>
-email: ${user.email}
-id: ${user.id} (type: ${typeof user.id})
-is_active: ${user.is_active} (type: ${typeof user.is_active})
-!is_active: ${!user.is_active}
-password_hash ilk 20: ${(user.password_hash || '').slice(0, 20)}...
-SEED password: ${password}
-bcrypt match: ${hashOk}
-role: ${user.role}
-</pre>`);
-  } catch (err) {
-    res.status(500).send(`<pre>HATA: ${err.stack}</pre>`);
-  }
 });
 
 // Kurulum — admin yoksa olustur, varsa sifre sifirla
@@ -522,24 +507,10 @@ app.post('/admin/login', async (req, res, next) => {
 
     const user = await getAdminByEmail(email);
 
-    // Gecici debug — login hatasi nerede
-    const seedPw = process.env.SEED_ADMIN_PASSWORD || '';
-    const pwMatch = password === seedPw;
-    const checks = {
-      userFound: !!user,
-      isActive: user ? !!user.is_active : false,
-      bcryptMatch: user && user.password_hash ? bcrypt.compareSync(password, user.password_hash) : false,
-      pwLen: password.length,
-      seedLen: seedPw.length,
-      pwSame: pwMatch,
-      pwHex: Buffer.from(password).toString('hex'),
-      seedHex: Buffer.from(seedPw).toString('hex'),
-    };
-
     if (!user || !user.is_active || !bcrypt.compareSync(password, user.password_hash)) {
       return res.status(401).render('admin_login', {
         title: 'Admin Giriş',
-        error: `Hata. [found=${checks.userFound} active=${checks.isActive} bcrypt=${checks.bcryptMatch} pwLen=${checks.pwLen} seedLen=${checks.seedLen} same=${checks.pwSame} pwHex=${checks.pwHex} seedHex=${checks.seedHex}]`,
+        error: 'E-posta veya şifre hatalı.',
         values: { email },
       });
     }
@@ -791,7 +762,7 @@ app.post('/admin/projects/save', requireAdmin, requireSuperAdmin, async (req, re
 
     const values = {
       name: (req.body.name || '').trim(),
-      slug: (req.body.slug || '').trim(),
+      slug: (req.body.slug || '').trim() || slugify(req.body.name || ''),
       is_active: req.body.is_active === 'on',
       isg_text_ziyaretci: (req.body.isg_text_ziyaretci || '').trim(),
       isg_text_tedarikci: (req.body.isg_text_tedarikci || '').trim(),
@@ -803,7 +774,7 @@ app.post('/admin/projects/save', requireAdmin, requireSuperAdmin, async (req, re
     const error =
       !values.name
         ? 'Proje adı zorunludur.'
-        : !/^[a-z0-9\-]{3,50}$/i.test(values.slug)
+        : !/^[a-z0-9.\-]{3,50}$/i.test(values.slug)
           ? 'Slug sadece harf/rakam/tire içermeli ve 3-50 karakter olmalıdır.'
           : !values.isg_text_ziyaretci || !values.isg_text_tedarikci || !values.isg_text_taseron
             ? 'Tüm İSG metinleri zorunludur.'
